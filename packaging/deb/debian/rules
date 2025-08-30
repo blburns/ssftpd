@@ -1,0 +1,89 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_SYSCONFDIR=/etc \
+		-DCMAKE_INSTALL_LOCALSTATEDIR=/var
+
+override_dh_auto_install:
+	dh_auto_install
+	
+	# Create necessary directories
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment/sites-available
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment/sites-enabled
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment/modules-available
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment/modules-enabled
+	mkdir -p debian/ssftpd/etc/ssftpd/deployment/conf.d
+	mkdir -p debian/ssftpd/var/log/ssftpd
+	mkdir -p debian/ssftpd/var/lib/ssftpd
+	mkdir -p debian/ssftpd/var/run/ssftpd
+	mkdir -p debian/ssftpd/var/ftp
+	mkdir -p debian/ssftpd/etc/systemd/system
+	mkdir -p debian/ssftpd/etc/init.d
+	mkdir -p debian/ssftpd/etc/logrotate.d
+	
+	# Install configuration files
+	cp -r ../deployment/* debian/ssftpd/etc/ssftpd/deployment/
+	
+	# Install service files
+	cp ../etc/systemd/ssftpd.service debian/ssftpd/etc/systemd/system/
+	cp ../etc/systemd/ssftpd@.service debian/ssftpd/etc/systemd/system/
+	cp ../etc/systemd/ssftpd.target debian/ssftpd/etc/systemd/system/
+	
+	# Install init scripts
+	cp ../etc/init.d/ssftpd debian/ssftpd/etc/init.d/
+	chmod 755 debian/ssftpd/etc/init.d/ssftpd
+	
+	# Install logrotate configuration
+	cp ../etc/logrotate.d/ssftpd debian/ssftpd/etc/logrotate.d/
+	
+	# Install management scripts
+	cp ../deployment/ssftpd-site debian/ssftpd/usr/bin/
+	cp ../deployment/ssftpd-module debian/ssftpd/usr/bin/
+	chmod 755 debian/ssftpd/usr/bin/ssftpd-site
+	chmod 755 debian/ssftpd/usr/bin/ssftpd-module
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 755 debian/ssftpd/var/ftp
+	chmod 755 debian/ssftpd/var/log/ssftpd
+	chmod 755 debian/ssftpd/var/lib/ssftpd
+
+override_dh_installdocs:
+	dh_installdocs
+	# Copy documentation
+	cp -r ../docs debian/ssftpd-doc/usr/share/doc/ssftpd/
+
+override_dh_installchangelogs:
+	dh_installchangelogs
+
+override_dh_perl:
+	# No Perl scripts
+
+override_dh_python3:
+	# No Python scripts
+
+override_dh_auto_test:
+	# Run tests if available
+	# dh_auto_test
+
+override_dh_strip:
+	dh_strip --dbg-package=ssftpd-dbg
+
+override_dh_shlibdeps:
+	dh_shlibdeps
+
+override_dh_gencontrol:
+	dh_gencontrol
+
+override_dh_builddeb:
+	dh_builddeb

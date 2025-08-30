@@ -1,0 +1,64 @@
+Source: ssftpd
+Section: net
+Priority: optional
+Maintainer: ssftpd Team <team@ssftpd.org>
+Build-Depends: debhelper (>= 12),
+               cmake,
+               g++,
+               make,
+               libssl-dev,
+               libjsoncpp-dev,
+               libgtest-dev,
+               pkg-config
+
+Package: ssftpd
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         openssl,
+         libjsoncpp4,
+         adduser,
+         systemd-sysv | sysvinit-core
+Recommends: logrotate
+Suggests: ssftpd-doc
+Description: Simple-Secure FTP Daemon
+ Simple-Secure FTP Daemon (ssftpd) is a secure, configurable FTP server with
+ modular architecture. It supports SSL/TLS encryption, virtual hosting, user
+ authentication, and rate limiting.
+ .
+ Features:
+  * SSL/TLS encryption support
+  * Virtual hosting with JSON configuration
+  * Modular architecture (enable/disable features)
+  * User authentication and authorization
+  * Rate limiting and DDoS protection
+  * Comprehensive logging and monitoring
+  * Cross-platform support (Linux, macOS, Windows)
+ .
+ This package contains the main server binary and configuration files.
+
+Package: ssftpd-dev
+Architecture: any
+Section: libdevel
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         ssftpd (= ${binary:Version})
+Description: Development files for Simple-Secure FTP Daemon
+ This package contains development files for ssftpd, including headers and
+ libraries needed for developing applications that use ssftpd.
+ .
+ This package is only needed if you want to develop applications that use
+ ssftpd libraries.
+
+Package: ssftpd-doc
+Architecture: all
+Section: doc
+Depends: ${misc:Depends}
+Description: Documentation for Simple-Secure FTP Daemon
+ This package contains comprehensive documentation for ssftpd, including:
+  * User guides and tutorials
+  * Configuration examples
+  * API documentation
+  * Deployment guides
+  * SSL certificate management
+  * Troubleshooting guides
