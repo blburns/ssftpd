@@ -1,491 +1,204 @@
 # User Guide
 
-This guide covers all user operations and management tasks for Simple-Secure FTP Daemon, from basic server management to advanced user administration.
+This comprehensive guide covers all aspects of using ssftpd, from basic operations to advanced features and troubleshooting.
 
-## 🎯 What You'll Learn
+## 🚀 Quick Start
 
-By the end of this guide, you'll be able to:
-- ✅ Manage FTP server operations (start, stop, restart)
-- ✅ Add, modify, and remove users
-- ✅ Configure virtual hosts and domains
-- ✅ Manage SSL certificates
-- ✅ Monitor server performance and logs
-- ✅ Troubleshoot common issues
-
-## 🚀 Server Management
-
-### Basic Server Operations
-
-#### Starting the Server
+### Starting the Server
 
 ```bash
-# Start in foreground (for testing)
+# Start with default configuration
+sudo ssftpd start
+
+# Start with custom configuration
 sudo ssftpd start --config /etc/ssftpd/ssftpd.conf
+
+# Start in foreground mode (for testing)
+sudo ssftpd --config /etc/ssftpd/ssftpd.conf --foreground
 
 # Start as daemon
 sudo ssftpd --daemon start --config /etc/ssftpd/ssftpd.conf
-
-# Start with specific configuration
-sudo ssftpd start --config /path/to/custom.conf
 ```
 
-#### Stopping the Server
-
-```bash
-# Graceful shutdown
-sudo ssftpd stop
-
-# Force stop (if graceful fails)
-sudo ssftpd stop --force
-
-# Stop specific instance
-sudo ssftpd stop --pid-file /var/run/ssftpd.pid
-```
-
-#### Restarting the Server
-
-```bash
-# Restart with current configuration
-sudo ssftpd restart
-
-# Restart with new configuration
-sudo ssftpd restart --config /path/to/new.conf
-
-# Reload configuration without restart
-sudo ssftpd reload
-```
-
-#### Server Status
+### Basic Commands
 
 ```bash
 # Check server status
 ssftpd status
 
-# Show detailed status
-ssftpd status --verbose
+# Stop the server
+sudo ssftpd stop
 
-# Show status in JSON format
-ssftpd status --format json
+# Restart the server
+sudo ssftpd restart
 
-# Check specific components
-ssftpd status --component ssl
-ssftpd status --component users
-ssftpd status --component virtual-hosts
+# Reload configuration
+sudo ssftpd reload
+
+# Check server version
+ssftpd --version
 ```
 
-### Service Management
+## 👥 User Management
 
-#### Linux (systemd)
+### Creating Users
 
 ```bash
-# Enable service at boot
-sudo systemctl enable ssftpd
-
-# Start service
-sudo systemctl start ssftpd
-
-# Stop service
-sudo systemctl stop ssftpd
-
-# Restart service
-sudo systemctl restart ssftpd
-
-# Check status
-sudo systemctl status ssftpd
-
-# View logs
-sudo journalctl -u ssftpd -f
-sudo journalctl -u ssftpd --since "1 hour ago"
-```
-
-#### macOS (launchd)
-
-```bash
-# Load service
-sudo launchctl load /Library/LaunchDaemons/com.blburns.ssftpd.plist
-
-# Start service
-sudo launchctl start com.blburns.ssftpd
-
-# Stop service
-sudo launchctl stop com.blburns.ssftpd
-
-# Unload service
-sudo launchctl unload /Library/LaunchDaemons/com.blburns.ssftpd.plist
-
-# Check status
-sudo launchctl list | grep ssftpd
-```
-
-#### Windows
-
-```cmd
-# Install service
-sc create ssftpd binPath= "C:\Program Files\ssftpd\bin\ssftpd.exe"
-
-# Start service
-sc start ssftpd
-
-# Stop service
-sc stop ssftpd
-
-# Delete service
-sc delete ssftpd
-
-# Check status
-sc query ssftpd
-```
-
-## 👤 User Management
-
-### Adding Users
-
-#### Basic User Creation
-
-```bash
-# Create a regular user
+# Create a new user
 sudo ssftpd user add \
   --username john \
-  --password secret123 \
+  --password securepass123 \
   --home /var/ftp/john \
-  --permissions READ,WRITE,LIST,UPLOAD,DOWNLOAD
+  --permissions READ,WRITE,UPLOAD,DOWNLOAD
 
-# Create user with specific group
-sudo ssftpd user add \
-  --username developer \
-  --password devpass123 \
-  --home /var/ftp/developer \
-  --group developers \
-  --permissions READ,WRITE,DELETE,LIST,UPLOAD,DOWNLOAD,ADMIN
-```
-
-#### Anonymous User
-
-```bash
-# Create anonymous user for public access
-sudo ssftpd user add \
-  --username anonymous \
-  --home /var/ftp/public \
-  --anonymous \
-  --permissions READ,LIST,DOWNLOAD
-
-# Create guest user with restrictions
-sudo ssftpd user add \
-  --username guest \
-  --password guest123 \
-  --home /var/ftp/guest \
-  --guest \
-  --permissions READ,LIST,DOWNLOAD \
-  --max-connections 1 \
-  --max-transfer-rate 256KB
-```
-
-#### Advanced User Configuration
-
-```bash
-# User with connection limits
+# Create user with specific limits
 sudo ssftpd user add \
   --username limited \
-  --password limpass123 \
+  --password pass123 \
   --home /var/ftp/limited \
-  --permissions READ,LIST,DOWNLOAD \
+  --permissions READ,DOWNLOAD \
   --max-connections 2 \
-  --max-transfer-rate 512KB \
-  --max-file-size 25MB \
-  --session-timeout 1800
+  --max-file-size 100MB \
+  --transfer-rate 5MB/s
 
-# User with path restrictions
+# Create admin user
 sudo ssftpd user add \
-  --username restricted \
-  --password res123 \
-  --home /var/ftp/restricted \
-  --permissions READ,LIST,DOWNLOAD \
-  --allowed-paths /var/ftp/public,/var/ftp/shared \
-  --denied-paths /var/ftp/private,/var/ftp/admin
+  --username admin \
+  --password adminpass \
+  --home /var/ftp/admin \
+  --permissions READ,WRITE,DELETE,UPLOAD,DOWNLOAD,ADMIN \
+  --max-connections 10
 ```
 
-### Modifying Users
-
-#### Password Changes
+### Managing Users
 
 ```bash
+# List all users
+ssftpd user list
+
+# Get user details
+ssftpd user info --username john
+
+# Modify user permissions
+sudo ssftpd user modify \
+  --username john \
+  --permissions READ,WRITE,UPLOAD,DOWNLOAD,DELETE
+
 # Change user password
 sudo ssftpd user password \
   --username john \
   --password newpassword123
 
-# Change password interactively
-sudo ssftpd user password --username john
-# Will prompt for new password
-```
-
-#### Permission Updates
-
-```bash
-# Grant additional permissions
-sudo ssftpd user grant \
-  --username john \
-  --permissions DELETE,RENAME
-
-# Revoke permissions
-sudo ssftpd user revoke \
-  --username john \
-  --permissions DELETE
-
-# Set complete permission set
-sudo ssftpd user permissions \
-  --username john \
-  --permissions READ,WRITE,LIST,UPLOAD,DOWNLOAD
-```
-
-#### User Properties
-
-```bash
-# Update home directory
-sudo ssftpd user modify \
-  --username john \
-  --home /var/ftp/newhome
-
-# Update connection limits
-sudo ssftpd user modify \
-  --username john \
-  --max-connections 5 \
-  --max-transfer-rate 1MB
-
-# Update session timeout
-sudo ssftpd user modify \
-  --username john \
-  --session-timeout 3600
-```
-
-### User Information
-
-#### Listing Users
-
-```bash
-# List all users
-sudo ssftpd user list
-
-# List users with details
-sudo ssftpd user list --verbose
-
-# List users in specific format
-sudo ssftpd user list --format json
-sudo ssftpd user list --format table
-
-# Filter users
-sudo ssftpd user list --enabled-only
-sudo ssftpd user list --anonymous-only
-sudo ssftpd user list --guest-only
-```
-
-#### User Details
-
-```bash
-# Show user information
-sudo ssftpd user show --username john
-
-# Show user statistics
-sudo ssftpd user stats --username john
-
-# Show user permissions
-sudo ssftpd user permissions --username john
-
-# Show user connections
-sudo ssftpd user connections --username john
-```
-
-#### User Status
-
-```bash
-# Enable user
-sudo ssftpd user enable --username john
-
 # Disable user
 sudo ssftpd user disable --username john
 
-# Lock user account
-sudo ssftpd user lock --username john
+# Enable user
+sudo ssftpd user enable --username john
 
-# Unlock user account
-sudo ssftpd user unlock --username john
-```
-
-### Removing Users
-
-```bash
-# Remove user (keeps files)
+# Remove user
 sudo ssftpd user remove --username john
-
-# Remove user and files
-sudo ssftpd user remove --username john --remove-files
-
-# Remove user with confirmation
-sudo ssftpd user remove --username john --confirm
-
-# Force remove (if user is connected)
-sudo ssftpd user remove --username john --force
 ```
 
-## 🏠 Virtual Host Management
+### User Types and Permissions
 
-### Adding Virtual Hosts
+#### Permission Levels
 
-#### Basic Virtual Host
+| Permission | Description | Commands |
+|------------|-------------|----------|
+| `READ` | View files and directories | `LIST`, `PWD`, `CWD` |
+| `WRITE` | Modify file attributes | `CHMOD`, `CHOWN` |
+| `UPLOAD` | Upload files | `STOR`, `APPE`, `STOU` |
+| `DOWNLOAD` | Download files | `RETR` |
+| `DELETE` | Delete files and directories | `DELE`, `RMD` |
+| `ADMIN` | Administrative operations | All commands |
+
+#### User Types
+
+**Regular Users**
+- Full access to their home directory
+- Configurable permissions and limits
+- Session tracking and statistics
+
+**Anonymous Users**
+- Limited access to public directories
+- No authentication required
+- Restricted permissions and limits
+
+**Guest Users**
+- Temporary access with restrictions
+- Limited session duration
+- Minimal permissions
+
+**Admin Users**
+- Full system access
+- User management capabilities
+- Configuration modification rights
+
+## 🌐 Virtual Host Management
+
+### Creating Virtual Hosts
 
 ```bash
-# Create default virtual host
-sudo ssftpd virtual add \
-  --hostname default \
-  --root /var/ftp \
-  --welcome "Welcome to Default FTP Server" \
-  --banner "Default FTP Server Ready"
-
-# Create domain-specific virtual host
+# Create basic virtual host
 sudo ssftpd virtual add \
   --hostname ftp.example.com \
-  --root /var/ftp/example \
-  --welcome "Welcome to Example.com FTP Server" \
-  --banner "Example.com FTP Server Ready"
-```
+  --root /var/ftp/example.com \
+  --ssl-cert /etc/ssftpd/ssl/example.com.crt \
+  --ssl-key /etc/ssftpd/ssl/example.com.key
 
-#### Virtual Host with SSL
-
-```bash
-# Create SSL-enabled virtual host
+# Create virtual host with custom settings
 sudo ssftpd virtual add \
   --hostname secure.example.com \
   --root /var/ftp/secure \
-  --ssl \
-  --certificate /etc/ssl/certs/secure.example.com.crt \
-  --private-key /etc/ssl/private/secure.example.com.key \
-  --require-ssl
-
-# Create virtual host with custom SSL settings
-sudo ssftpd virtual add \
-  --hostname custom.example.com \
-  --root /var/ftp/custom \
-  --ssl \
-  --certificate /etc/ssl/certs/custom.example.com.crt \
-  --private-key /etc/ssl/private/custom.example.com.key \
-  --min-tls-version 1.2 \
-  --cipher-suite "ECDHE-RSA-AES256-GCM-SHA384"
-```
-
-#### Advanced Virtual Host Configuration
-
-```bash
-# Virtual host with security restrictions
-sudo ssftpd virtual add \
-  --hostname restricted.example.com \
-  --root /var/ftp/restricted \
-  --chroot \
-  --chroot-directory /var/ftp/restricted \
-  --drop-privileges \
-  --run-as-user ftp \
-  --run-as-group ftp
-
-# Virtual host with transfer limits
-sudo ssftpd virtual add \
-  --hostname limited.example.com \
-  --root /var/ftp/limited \
-  --max-file-size 50MB \
-  --max-transfer-rate 512KB \
-  --allow-overwrite false \
-  --allow-resume true
+  --port 2121 \
+  --ssl-port 9990 \
+  --require-ssl \
+  --max-connections 50 \
+  --allowed-users admin,user1
 ```
 
 ### Managing Virtual Hosts
 
-#### Listing Virtual Hosts
-
 ```bash
 # List all virtual hosts
-sudo ssftpd virtual list
+ssftpd virtual list
 
-# List with details
-sudo ssftpd virtual list --verbose
+# Get virtual host details
+ssftpd virtual info --hostname ftp.example.com
 
-# List in specific format
-sudo ssftpd virtual list --format json
-sudo ssftpd virtual list --format table
-
-# Filter virtual hosts
-sudo ssftpd virtual list --enabled-only
-sudo ssftpd virtual list --ssl-only
-```
-
-#### Virtual Host Information
-
-```bash
-# Show virtual host details
-sudo ssftpd virtual show --hostname ftp.example.com
-
-# Show virtual host statistics
-sudo ssftpd virtual stats --hostname ftp.example.com
-
-# Show virtual host configuration
-sudo ssftpd virtual config --hostname ftp.example.com
-```
-
-#### Modifying Virtual Hosts
-
-```bash
-# Update welcome message
-sudo ssftpd virtual modify \
-  --hostname ftp.example.com \
-  --welcome "Updated Welcome Message"
-
-# Update document root
-sudo ssftpd virtual modify \
-  --hostname ftp.example.com \
-  --root /var/ftp/newroot
-
-# Update SSL settings
-sudo ssftpd virtual modify \
-  --hostname ftp.example.com \
-  --certificate /path/to/new/cert.crt \
-  --private-key /path/to/new/key.key
-```
-
-#### Virtual Host Status
-
-```bash
 # Enable virtual host
 sudo ssftpd virtual enable --hostname ftp.example.com
 
 # Disable virtual host
 sudo ssftpd virtual disable --hostname ftp.example.com
 
-# Set as default
-sudo ssftpd virtual default --hostname ftp.example.com
+# Remove virtual host
+sudo ssftpd virtual remove --hostname ftp.example.com
 ```
 
-#### Removing Virtual Hosts
+### Virtual Host Configuration
 
 ```bash
-# Remove virtual host (keeps files)
-sudo ssftpd virtual remove --hostname ftp.example.com
+# Update virtual host settings
+sudo ssftpd virtual modify \
+  --hostname ftp.example.com \
+  --max-connections 100 \
+  --ssl-cert /etc/ssftpd/ssl/new-cert.crt \
+  --ssl-key /etc/ssftpd/ssl/new-key.key
 
-# Remove virtual host and files
-sudo ssftpd virtual remove --hostname ftp.example.com --remove-files
+# Set default virtual host
+sudo ssftpd virtual set-default --hostname ftp.example.com
 
-# Force remove
-sudo ssftpd virtual remove --hostname ftp.example.com --force
+# Test virtual host configuration
+ssftpd virtual test --hostname ftp.example.com
 ```
 
-## 🔐 SSL Certificate Management
+## 🔒 SSL Certificate Management
 
 ### Generating Certificates
 
-#### Self-Signed Certificates
-
 ```bash
-# Generate basic self-signed certificate
-sudo ssftpd ssl generate \
-  --hostname ftp.example.com
-
-# Generate with custom details
+# Generate self-signed certificate
 sudo ssftpd ssl generate \
   --hostname ftp.example.com \
   --country US \
@@ -493,472 +206,440 @@ sudo ssftpd ssl generate \
   --city "San Francisco" \
   --organization "Example Corp" \
   --email admin@example.com \
-  --validity 365
+  --days 365
 
-# Generate for multiple hostnames
+# Generate certificate with custom settings
 sudo ssftpd ssl generate \
   --hostname ftp.example.com \
-  --alt-names "ftp2.example.com,ftp3.example.com" \
-  --country US \
-  --state California
-```
-
-#### Certificate Signing Requests (CSR)
-
-```bash
-# Generate CSR for CA signing
-sudo ssftpd ssl csr \
-  --hostname ftp.example.com \
-  --country US \
-  --state California \
-  --city "San Francisco" \
-  --organization "Example Corp" \
-  --email admin@example.com \
-  --output /tmp/ftp.example.com.csr
+  --key-size 4096 \
+  --signature-algorithm sha256 \
+  --days 730
 ```
 
 ### Installing Certificates
 
-#### Installing Existing Certificates
-
 ```bash
-# Install certificate and private key
+# Install existing certificate
 sudo ssftpd ssl install \
   --hostname ftp.example.com \
-  --certificate /path/to/certificate.crt \
-  --private-key /path/to/private.key
+  --cert /path/to/certificate.crt \
+  --key /path/to/private.key
 
 # Install with CA certificate
 sudo ssftpd ssl install \
   --hostname ftp.example.com \
-  --certificate /path/to/certificate.crt \
-  --private-key /path/to/private.key \
-  --ca-certificate /path/to/ca.crt
+  --cert /path/to/certificate.crt \
+  --key /path/to/private.key \
+  --ca /path/to/ca.crt
 
-# Install for specific virtual host
+# Install Let's Encrypt certificate
 sudo ssftpd ssl install \
   --hostname ftp.example.com \
-  --virtual-host secure.example.com \
-  --certificate /path/to/secure.example.com.crt \
-  --private-key /path/to/secure.example.com.key
+  --cert /etc/letsencrypt/live/ftp.example.com/fullchain.pem \
+  --key /etc/letsencrypt/live/ftp.example.com/privkey.pem
 ```
 
-#### Certificate Updates
+### Managing Certificates
 
 ```bash
-# Update existing certificate
-sudo ssftpd ssl update \
-  --hostname ftp.example.com \
-  --certificate /path/to/new/certificate.crt \
-  --private-key /path/to/new/private.key
+# List all certificates
+ssftpd ssl list
 
-# Update CA certificate
-sudo ssftpd ssl update \
-  --hostname ftp.example.com \
-  --ca-certificate /path/to/new/ca.crt
-```
+# Check certificate status
+ssftpd ssl status --hostname ftp.example.com
 
-### Certificate Management
+# Renew certificate
+sudo ssftpd ssl renew --hostname ftp.example.com
 
-#### Certificate Information
-
-```bash
-# Show certificate details
-sudo ssftpd ssl show --hostname ftp.example.com
-
-# Show certificate validity
-sudo ssftpd ssl validity --hostname ftp.example.com
-
-# Show certificate chain
-sudo ssftpd ssl chain --hostname ftp.example.com
-
-# Show certificate fingerprint
-sudo ssftpd ssl fingerprint --hostname ftp.example.com
-```
-
-#### Certificate Renewal
-
-```bash
-# Check certificate expiration
-sudo ssftpd ssl check --hostname ftp.example.com
-
-# Renew self-signed certificate
-sudo ssftpd ssl renew \
-  --hostname ftp.example.com \
-  --validity 365
-
-# Renew with new details
-sudo ssftpd ssl renew \
-  --hostname ftp.example.com \
-  --country US \
-  --state California \
-  --city "San Francisco" \
-  --organization "Example Corp" \
-  --email admin@example.com \
-  --validity 730
-```
-
-#### Certificate Removal
-
-```bash
 # Remove certificate
 sudo ssftpd ssl remove --hostname ftp.example.com
 
-# Remove from specific virtual host
-sudo ssftpd ssl remove \
-  --hostname ftp.example.com \
-  --virtual-host secure.example.com
-
-# Force remove
-sudo ssftpd ssl remove --hostname ftp.example.com --force
+# Validate certificate
+ssftpd ssl validate --hostname ftp.example.com
 ```
 
 ## 📊 Monitoring and Statistics
 
-### Server Statistics
-
-#### Basic Statistics
+### Server Status
 
 ```bash
-# Show server statistics
-ssftpd stats
+# Get server status
+ssftpd status
 
-# Show statistics in specific format
-ssftpd stats --format json
-ssftpd stats --format table
+# Get detailed status
+ssftpd status --detailed
 
-# Show specific statistics
-ssftpd stats --component connections
-ssftpd stats --component transfers
-ssftpd stats --component users
+# Get status in JSON format
+ssftpd status --json
+
+# Get status for specific virtual host
+ssftpd status --hostname ftp.example.com
 ```
 
-#### Performance Metrics
+### Connection Information
 
 ```bash
-# Show performance metrics
-ssftpd performance
-
-# Show memory usage
-ssftpd memory
-
-# Show CPU usage
-ssftpd cpu
-
-# Show network statistics
-ssftpd network
-```
-
-### Connection Monitoring
-
-#### Active Connections
-
-```bash
-# Show active connections
+# List active connections
 ssftpd connections
 
-# Show connection details
-ssftpd connections --verbose
+# Get connection details
+ssftpd connections --detailed
 
-# Filter connections
+# Filter connections by user
 ssftpd connections --user john
-ssftpd connections --virtual-host ftp.example.com
+
+# Filter connections by IP
 ssftpd connections --ip 192.168.1.100
-
-# Show connection history
-ssftpd connections --history
 ```
 
-#### Connection Management
+### Transfer Statistics
 
 ```bash
-# Disconnect specific connection
-sudo ssftpd disconnect --connection-id 12345
+# Get transfer statistics
+ssftpd transfers
 
-# Disconnect user connections
-sudo ssftpd disconnect --user john
+# Get user transfer stats
+ssftpd transfers --user john
 
-# Disconnect IP connections
-sudo ssftpd disconnect --ip 192.168.1.100
+# Get virtual host transfer stats
+ssftpd transfers --hostname ftp.example.com
 
-# Force disconnect
-sudo ssftpd disconnect --connection-id 12345 --force
+# Get transfer stats for time period
+ssftpd transfers --since "2024-01-01" --until "2024-01-31"
 ```
 
-### Log Management
-
-#### Viewing Logs
+### Performance Metrics
 
 ```bash
-# View main log
-tail -f /var/log/ssftpd/ssftpd.log
+# Get performance metrics
+ssftpd metrics
+
+# Get system resource usage
+ssftpd metrics --system
+
+# Get network statistics
+ssftpd metrics --network
+
+# Get disk usage statistics
+ssftpd metrics --disk
+```
+
+## 📝 Logging and Troubleshooting
+
+### Viewing Logs
+
+```bash
+# View main server log
+sudo tail -f /var/log/ssftpd/ssftpd.log
 
 # View access log
-tail -f /var/log/ssftpd/access.log
+sudo tail -f /var/log/ssftpd/access.log
 
 # View error log
-tail -f /var/log/ssftpd/error.log
+sudo tail -f /var/log/ssftpd/error.log
 
-# View logs with ssftpd command
-ssftpd logs --follow
-ssftpd logs --lines 100
-ssftpd logs --level ERROR
+# View audit log
+sudo tail -f /var/log/ssftpd/audit.log
+
+# Search logs for specific user
+sudo grep "john" /var/log/ssftpd/ssftpd.log
+
+# Search logs for specific IP
+sudo grep "192.168.1.100" /var/log/ssftpd/access.log
 ```
 
-#### Log Analysis
+### Log Analysis
 
 ```bash
-# Search logs
-ssftpd logs --search "connection"
-ssftpd logs --search "error"
-ssftpd logs --search "user john"
+# Get log summary
+ssftpd logs summary
 
-# Filter by time
-ssftpd logs --since "1 hour ago"
-ssftpd logs --since "2024-01-15 10:00:00"
-ssftpd logs --until "2024-01-15 11:00:00"
+# Get error count
+ssftpd logs errors --count
 
-# Filter by component
-ssftpd logs --component ssl
-ssftpd logs --component authentication
-ssftpd logs --component transfer
+# Get access patterns
+ssftpd logs access --pattern
+
+# Get user activity
+ssftpd logs user --username john
+
+# Export logs
+ssftpd logs export --format csv --output /tmp/logs.csv
 ```
 
-#### Log Management
+### Common Issues and Solutions
+
+#### Connection Problems
 
 ```bash
-# Rotate logs
-sudo ssftpd logrotate
+# Check if server is running
+ssftpd status
 
-# Clear logs
-sudo ssftpd logclear
+# Check if port is open
+sudo netstat -tlnp | grep :21
 
-# Archive logs
-sudo ssftpd logarchive --output /backup/logs-$(date +%Y%m%d).tar.gz
+# Check firewall rules
+sudo ufw status
+sudo firewall-cmd --list-all
 
-# Set log level
-sudo ssftpd loglevel --level DEBUG
-sudo ssftpd loglevel --level INFO
+# Test local connection
+ftp localhost
 ```
 
-## 🔧 Maintenance and Troubleshooting
-
-### Configuration Management
-
-#### Configuration Validation
+#### Authentication Issues
 
 ```bash
-# Test configuration
+# Check user configuration
+ssftpd user info --username john
+
+# Verify password
+sudo ssftpd user password --username john --password newpass
+
+# Check user permissions
+ssftpd user permissions --username john
+
+# Test user login
+ssftpd user test --username john
+```
+
+#### SSL/TLS Issues
+
+```bash
+# Check certificate validity
+ssftpd ssl status --hostname ftp.example.com
+
+# Validate certificate
+ssftpd ssl validate --hostname ftp.example.com
+
+# Check SSL configuration
+ssftpd ssl config --hostname ftp.example.com
+
+# Test SSL connection
+openssl s_client -connect ftp.example.com:990
+```
+
+## 🔧 Advanced Features
+
+### Custom Commands
+
+```bash
+# Enable custom commands
+ssftpd commands enable --command version
+
+# Disable custom commands
+ssftpd commands disable --command help
+
+# List available commands
+ssftpd commands list
+
+# Test custom command
+ssftpd commands test --command version
+```
+
+### File Transfer Optimization
+
+```bash
+# Enable sendfile optimization
+ssftpd transfer optimize --sendfile
+
+# Enable memory mapping
+ssftpd transfer optimize --mmap
+
+# Set buffer sizes
+ssftpd transfer buffer --read 16384 --write 16384
+
+# Enable compression
+ssftpd transfer compression --enable --level 6
+```
+
+### Rate Limiting
+
+```bash
+# Set global rate limits
+sudo ssftpd rate-limit set \
+  --connections-per-minute 100 \
+  --transfers-per-minute 50 \
+  --bytes-per-minute 100MB
+
+# Set per-user rate limits
+sudo ssftpd rate-limit user \
+  --username john \
+  --connections-per-minute 10 \
+  --transfer-rate 5MB/s
+
+# Set per-IP rate limits
+sudo ssftpd rate-limit ip \
+  --ip 192.168.1.100 \
+  --connections-per-minute 5 \
+  --transfer-rate 2MB/s
+```
+
+## 📱 Web Interface
+
+### Accessing the Web Interface
+
+```bash
+# Enable web interface
+sudo ssftpd web enable --port 8080
+
+# Access web interface
+# Open browser to: http://localhost:8080
+
+# Set web interface authentication
+sudo ssftpd web auth \
+  --username admin \
+  --password adminpass
+
+# Configure web interface
+sudo ssftpd web config \
+  --theme dark \
+  --language en \
+  --timezone UTC
+```
+
+### Web Interface Features
+
+- **Server Status**: Real-time server information
+- **User Management**: Add, modify, and remove users
+- **Virtual Host Management**: Configure virtual hosts
+- **SSL Certificate Management**: Manage SSL certificates
+- **Monitoring**: View statistics and performance metrics
+- **Logs**: Browse and search log files
+- **File Browser**: Browse FTP directories
+
+## 🔄 Backup and Recovery
+
+### Configuration Backup
+
+```bash
+# Backup all configurations
+sudo ssftpd backup create --output /backup/ssftpd-$(date +%Y%m%d).tar.gz
+
+# Backup specific configuration
+sudo ssftpd backup config --output /backup/config-$(date +%Y%m%d).tar.gz
+
+# Backup user configurations
+sudo ssftpd backup users --output /backup/users-$(date +%Y%m%d).tar.gz
+
+# Backup SSL certificates
+sudo ssftpd backup ssl --output /backup/ssl-$(date +%Y%m%d).tar.gz
+```
+
+### Configuration Restoration
+
+```bash
+# Restore from backup
+sudo ssftpd backup restore --file /backup/ssftpd-20240115.tar.gz
+
+# Restore specific configuration
+sudo ssftpd backup restore-config --file /backup/config-20240115.tar.gz
+
+# Restore users
+sudo ssftpd backup restore-users --file /backup/users-20240115.tar.gz
+
+# Restore SSL certificates
+sudo ssftpd backup restore-ssl --file /backup/ssl-20240115.tar.gz
+```
+
+## 📚 Command Reference
+
+### Server Management Commands
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `ssftpd start` | Start the server | `--config`, `--daemon`, `--foreground` |
+| `ssftpd stop` | Stop the server | `--force`, `--timeout` |
+| `ssftpd restart` | Restart the server | `--config`, `--daemon` |
+| `ssftpd reload` | Reload configuration | `--config` |
+| `ssftpd status` | Show server status | `--detailed`, `--json` |
+
+### User Management Commands
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `ssftpd user add` | Add new user | `--username`, `--password`, `--home`, `--permissions` |
+| `ssftpd user modify` | Modify user | `--username`, `--permissions`, `--limits` |
+| `ssftpd user remove` | Remove user | `--username`, `--force` |
+| `ssftpd user list` | List users | `--detailed`, `--json` |
+| `ssftpd user info` | Show user info | `--username` |
+
+### Virtual Host Commands
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `ssftpd virtual add` | Add virtual host | `--hostname`, `--root`, `--ssl-cert`, `--ssl-key` |
+| `ssftpd virtual modify` | Modify virtual host | `--hostname`, `--settings` |
+| `ssftpd virtual remove` | Remove virtual host | `--hostname`, `--force` |
+| `ssftpd virtual list` | List virtual hosts | `--detailed`, `--json` |
+| `ssftpd virtual info` | Show virtual host info | `--hostname` |
+
+### SSL Commands
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `ssftpd ssl generate` | Generate certificate | `--hostname`, `--country`, `--state`, `--city` |
+| `ssftpd ssl install` | Install certificate | `--hostname`, `--cert`, `--key`, `--ca` |
+| `ssftpd ssl renew` | Renew certificate | `--hostname` |
+| `ssftpd ssl remove` | Remove certificate | `--hostname` |
+| `ssftpd ssl status` | Show certificate status | `--hostname` |
+
+## 🚨 Troubleshooting Guide
+
+### Common Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Connection refused` | Server not running | Start server with `ssftpd start` |
+| `Authentication failed` | Invalid credentials | Check username/password |
+| `Permission denied` | Insufficient permissions | Check user permissions |
+| `SSL handshake failed` | Certificate issues | Validate SSL configuration |
+| `Port already in use` | Port conflict | Change port or stop conflicting service |
+
+### Diagnostic Commands
+
+```bash
+# Test server configuration
 ssftpd --test-config --config /etc/ssftpd/ssftpd.conf
 
-# Validate configuration
-ssftpd --validate --config /etc/ssftpd/ssftpd.conf
+# Test SSL configuration
+ssftpd --test-ssl --config /etc/ssftpd/ssftpd.conf
 
-# Check specific sections
-ssftpd config --check ssl
-ssftpd config --check users
-ssftpd config --check virtual-hosts
-```
+# Validate user configurations
+ssftpd-ctl validate-users --config /etc/ssftpd/ssftpd.conf
 
-#### Configuration Backup
-
-```bash
-# Backup configuration
-sudo ssftpd config --backup --output /backup/config-$(date +%Y%m%d).tar.gz
-
-# Restore configuration
-sudo ssftpd config --restore --input /backup/config-20240115.tar.gz
-
-# Export configuration
-sudo ssftpd config --export --format json --output config.json
-sudo ssftpd config --export --format ini --output config.ini
-```
-
-### System Maintenance
-
-#### Database Maintenance
-
-```bash
-# Optimize user database
-sudo ssftpd db --optimize
-
-# Backup user database
-sudo ssftpd db --backup --output /backup/users-$(date +%Y%m%d).db
-
-# Restore user database
-sudo ssftpd db --restore --input /backup/users-20240115.db
-
-# Check database integrity
-sudo ssftpd db --check
-```
-
-#### File System Maintenance
-
-```bash
 # Check file permissions
-sudo ssftpd fs --check-permissions
+ssftpd-ctl check-permissions --config /etc/ssftpd/ssftpd.conf
 
-# Fix file permissions
-sudo ssftpd fs --fix-permissions
-
-# Clean temporary files
-sudo ssftpd fs --clean-temp
-
-# Check disk usage
-sudo ssftpd fs --disk-usage
+# Test network connectivity
+ssftpd-ctl test-network --host localhost --port 21
 ```
 
-### Troubleshooting
-
-#### Common Issues
+### Performance Tuning
 
 ```bash
-# Check server health
-ssftpd health
+# Monitor performance
+ssftpd metrics --real-time
 
-# Diagnose problems
-ssftpd diagnose
+# Analyze bottlenecks
+ssftpd analyze --performance
 
-# Show system information
-ssftpd system
+# Optimize settings
+ssftpd optimize --auto
 
-# Check dependencies
-ssftpd deps
+# Generate performance report
+ssftpd report --performance --output /tmp/performance.pdf
 ```
 
-#### Debug Mode
+## 📚 Next Steps
 
-```bash
-# Enable debug mode
-sudo ssftpd debug --enable
+After mastering the basic usage:
 
-# Set debug level
-sudo ssftpd debug --level TRACE
-
-# Show debug information
-ssftpd debug --info
-
-# Disable debug mode
-sudo ssftpd debug --disable
-```
-
-## 📚 Advanced Operations
-
-### Batch Operations
-
-#### Batch User Management
-
-```bash
-# Add multiple users from file
-sudo ssftpd user batch-add --file users.txt
-
-# Update multiple users
-sudo ssftpd user batch-update --file updates.txt
-
-# Remove multiple users
-sudo ssftpd user batch-remove --file users-to-remove.txt
-```
-
-#### Batch Virtual Host Management
-
-```bash
-# Add multiple virtual hosts
-sudo ssftpd virtual batch-add --file virtual-hosts.txt
-
-# Update multiple virtual hosts
-sudo ssftpd virtual batch-update --file updates.txt
-```
-
-### Automation
-
-#### Scheduled Tasks
-
-```bash
-# Set up automatic certificate renewal
-sudo ssftpd ssl --auto-renew --schedule "0 2 * * 0"
-
-# Set up automatic log rotation
-sudo ssftpd logrotate --auto --schedule "0 1 * * *"
-
-# Set up automatic backup
-sudo ssftpd backup --auto --schedule "0 3 * * 0"
-```
-
-#### Integration
-
-```bash
-# Export metrics for monitoring
-ssftpd metrics --export --format prometheus
-
-# Export logs for log aggregation
-ssftpd logs --export --format syslog
-
-# Export configuration for automation
-ssftpd config --export --format ansible
-```
-
-## 🚨 Emergency Procedures
-
-### Emergency Stop
-
-```bash
-# Emergency stop server
-sudo ssftpd stop --emergency
-
-# Kill all processes
-sudo pkill -f ssftpd
-
-# Force kill
-sudo pkill -9 -f ssftpd
-```
-
-### Emergency Recovery
-
-```bash
-# Start in safe mode
-sudo ssftpd start --safe-mode --config /etc/ssftpd/safe.conf
-
-# Reset to default configuration
-sudo ssftpd config --reset
-
-# Emergency user access
-sudo ssftpd user emergency --username admin --password emergency123
-```
-
-## 📞 Getting Help
-
-### Command Help
-
-```bash
-# General help
-ssftpd --help
-
-# Command-specific help
-ssftpd user --help
-ssftpd virtual --help
-ssftpd ssl --help
-
-# Show all commands
-ssftpd --commands
-```
-
-### Documentation
-
-- **Configuration Guide**: [Configuration Documentation](../configuration/README.md)
-- **API Reference**: [API Documentation](../api/README.md)
-- **Examples**: [Configuration Examples](../examples/README.md)
-- **Development Guide**: [Development Documentation](../development/README.md)
-
-### Support Channels
-
-- **GitHub Issues**: Report bugs and request features
-- **GitHub Discussions**: Ask questions and share solutions
-- **Documentation**: Browse comprehensive guides
-- **Examples**: Check working configurations
+1. **Advanced Configuration**: See [Configuration Guide](../configuration/README.md)
+2. **Security Hardening**: See [Security Guide](security.md)
+3. **Performance Tuning**: See [Performance Guide](performance.md)
+4. **Integration**: See [Integration Guide](integration.md)
+5. **Development**: See [Development Guide](../development/README.md)
 
 ---
 
-**Next Steps**: Now that you understand user operations, explore:
-- [Configuration Guide](../configuration/README.md) for detailed settings
-- [Examples](../examples/README.md) for practical configurations
-- [Development Guide](../development/README.md) for contributing
+**Need help?** Check our [Troubleshooting Guide](troubleshooting.md) or open an [issue on GitHub](https://github.com/ssftpd/ssftpd/issues).

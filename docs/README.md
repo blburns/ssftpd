@@ -1,110 +1,121 @@
-# Simple FTP Daemon Documentation
+# ssftpd Documentation
 
-Welcome to the comprehensive documentation for Simple FTP Daemon (ssftpd), a secure, configurable, and feature-rich FTP server written in C++.
+Welcome to the comprehensive documentation for **Simple-Secure FTP Daemon (ssftpd)**, a secure, configurable, and feature-rich FTP server written in C++.
 
 ## 📚 Documentation Overview
 
-This documentation is organized into several sections to help you find the information you need quickly:
+This documentation is organized into several sections to help you find the information you need quickly and efficiently.
 
-### 🚀 [Getting Started](getting-started/README.md)
-- **Quick Start Guide**: Get up and running in minutes
-- **Installation**: Step-by-step installation instructions
-- **First Configuration**: Basic setup and configuration
-- **Basic Usage**: Essential commands and operations
+### 🚀 Getting Started
+- **[Installation Guide](installation/README.md)** - Complete installation instructions for all platforms
+- **[Quick Start Guide](getting-started/README.md)** - Get up and running in minutes
+- **[Configuration Basics](configuration/README.md)** - Essential configuration concepts
 
-### ⚙️ [Configuration](configuration/README.md)
-- **Configuration Files**: Understanding the configuration system
-- **Server Settings**: Global server configuration options
-- **SSL/TLS Configuration**: Setting up secure connections
-- **User Management**: Configuring users and permissions
-- **Virtual Hosts**: Multi-domain configuration
-- **Security Settings**: Hardening your FTP server
+### 👥 User Guides
+- **[User Guide](user-guide/README.md)** - Complete user manual and reference
+- **[Examples](examples/README.md)** - Practical examples and use cases
+- **[Troubleshooting](user-guide/troubleshooting.md)** - Common issues and solutions
 
-### 👥 [User Guide](user-guide/README.md)
-- **Command Line Interface**: Complete command reference
-- **User Management**: Adding, modifying, and removing users
-- **Virtual Host Management**: Managing multiple domains
-- **SSL Certificate Management**: Certificate generation and installation
-- **Monitoring and Logging**: Server monitoring and troubleshooting
+### 🔧 Development & API
+- **[Development Guide](development/README.md)** - Building from source and contributing
+- **[API Reference](api/README.md)** - Complete API documentation
+- **[Architecture](development/architecture.md)** - System design and architecture
 
-### 🔧 [Development](development/README.md)
-- **Architecture Overview**: Understanding the codebase structure
-- **Building from Source**: Development setup and build process
-- **API Reference**: Core classes and interfaces
-- **Contributing Guidelines**: How to contribute to the project
-- **Testing**: Running tests and quality assurance
-
-### 📖 [API Reference](api/README.md)
-- **Core Classes**: Detailed class documentation
-- **Configuration Structures**: Configuration data structures
-- **Error Handling**: Error codes and exception handling
-- **Platform Abstraction**: Cross-platform compatibility
-
-### 💡 [Examples](examples/README.md)
-- **Basic Configuration**: Simple server setup examples
-- **Advanced Configuration**: Complex multi-domain setups
-- **SSL Configuration**: Secure server examples
-- **User Management**: User configuration examples
-- **Integration Examples**: Working with other systems
+### 📖 Reference Materials
+- **[Configuration Reference](configuration/reference.md)** - Complete configuration options
+- **[Command Line Reference](user-guide/commands.md)** - All available commands
+- **[Security Guide](user-guide/security.md)** - Security best practices
 
 ## 🎯 Quick Navigation
 
-| Section | Description | Target Audience |
-|---------|-------------|-----------------|
-| [Getting Started](getting-started/README.md) | Installation and basic setup | New users, system administrators |
-| [Configuration](configuration/README.md) | Server configuration options | System administrators, DevOps engineers |
-| [User Guide](user-guide/README.md) | Daily operations and management | System administrators, support staff |
-| [Development](development/README.md) | Building and contributing | Developers, contributors |
-| [API Reference](api/README.md) | Technical implementation details | Developers, integrators |
-| [Examples](examples/README.md) | Practical configuration examples | All users |
+| What You Need | Start Here |
+|---------------|------------|
+| **Install ssftpd** | [Installation Guide](installation/README.md) |
+| **Configure the server** | [Configuration Guide](configuration/README.md) |
+| **Learn basic usage** | [Quick Start](getting-started/README.md) |
+| **Find examples** | [Examples](examples/README.md) |
+| **Troubleshoot issues** | [Troubleshooting](user-guide/troubleshooting.md) |
+| **Build from source** | [Development Guide](development/README.md) |
+| **API reference** | [API Documentation](api/README.md) |
 
-## 🔍 Finding What You Need
+## 🌟 Key Features
 
-### For New Users
-Start with the [Getting Started](getting-started/README.md) guide to install and configure your first FTP server.
+### 🔒 Security First
+- **SSL/TLS encryption** for secure file transfers
+- **User authentication** with multiple backends
+- **Access control** and path restrictions
+- **Chroot isolation** for enhanced security
 
-### For System Administrators
-Focus on [Configuration](configuration/README.md) and [User Guide](user-guide/README.md) for production deployment and management.
+### 🚀 High Performance
+- **Multi-threaded architecture** for concurrent connections
+- **Optimized I/O** with sendfile and memory mapping
+- **Connection pooling** for efficient resource usage
+- **Rate limiting** to prevent abuse
 
-### For Developers
-Use [Development](development/README.md) and [API Reference](api/README.md) to understand the codebase and contribute.
+### 🏗️ Enterprise Ready
+- **Virtual hosting** for multiple domains
+- **Comprehensive logging** with rotation
+- **Monitoring and metrics** for production use
+- **Service integration** (systemd, launchd, Windows)
 
-### For DevOps Engineers
-Check [Configuration](configuration/README.md) and [Examples](examples/README.md) for automation and deployment patterns.
+### 🔧 Developer Friendly
+- **Modern C++17** codebase
+- **Comprehensive testing** with Google Test
+- **Cross-platform** support (Linux, macOS, Windows)
+- **Extensible architecture** for custom features
 
 ## 📋 Prerequisites
 
-Before diving into the documentation, ensure you have:
+Before using ssftpd, ensure you have:
 
-- **Basic understanding** of FTP protocol and networking
-- **System administration** experience (Linux, macOS, or Windows)
-- **Command line** familiarity
-- **Network security** knowledge (for production deployments)
+- **C++17 Compiler**: GCC 7+, Clang 5+, or MSVC 2017+
+- **CMake 3.16+**: Build system
+- **OpenSSL**: SSL/TLS support
+- **jsoncpp**: JSON configuration parsing
 
-## 🚨 Important Notes
+## 🚀 Quick Start
 
-- **Security**: This documentation includes security best practices. Follow them carefully in production environments.
-- **Version Compatibility**: Documentation is written for ssftpd v0.1.0. Check version compatibility for your installation.
-- **Platform Differences**: Some features may vary between platforms. Platform-specific notes are clearly marked.
+```bash
+# Install from source
+git clone https://github.com/ssftpd/ssftpd.git
+cd ssftpd
+make install-dev
+make build
+make install
 
-## 📞 Getting Help
+# Or install from packages
+sudo apt install ssftpd  # Ubuntu/Debian
+brew install ssftpd      # macOS
+```
 
-If you can't find what you're looking for:
+## 📖 Documentation Versions
 
-1. **Search the documentation** using your browser's search function
-2. **Check the examples** for similar use cases
-3. **Review the configuration** documentation for specific options
-4. **Open an issue** on GitHub for documentation improvements
-5. **Join discussions** in GitHub Discussions
+- **Current Version**: v0.1.0
+- **Documentation**: Always up-to-date with latest release
+- **API**: Covers all public interfaces
+- **Examples**: Tested and verified
 
-## 🔄 Documentation Updates
+## 🤝 Contributing to Documentation
 
-This documentation is maintained alongside the codebase. When new features are added or changes are made, the documentation is updated accordingly.
+We welcome contributions to improve this documentation:
 
-## 📝 Contributing to Documentation
+1. **Report Issues**: Found an error or unclear section?
+2. **Suggest Improvements**: Have ideas for better organization?
+3. **Submit Fixes**: Correct typos or add missing information
+4. **Add Examples**: Share your use cases and configurations
 
-Documentation improvements are welcome! See the [Contributing Guidelines](development/CONTRIBUTING.md) for how to help improve this documentation.
+See our [Contributing Guide](development/contributing.md) for details.
+
+## 📞 Support & Community
+
+- **Documentation Issues**: [GitHub Issues](https://github.com/ssftpd/ssftpd/issues)
+- **Questions**: [GitHub Discussions](https://github.com/ssftpd/ssftpd/discussions)
+- **Security Issues**: [Security Policy](https://github.com/ssftpd/ssftpd/security/policy)
+
+## 📄 License
+
+This documentation is licensed under the [Apache License, Version 2.0](LICENSE).
 
 ---
 
-**Next Steps**: Choose your path above or start with the [Getting Started Guide](getting-started/README.md) if you're new to ssftpd.
+**Ready to get started?** Begin with the [Installation Guide](installation/README.md) or jump to [Quick Start](getting-started/README.md) if you're already familiar with FTP servers.

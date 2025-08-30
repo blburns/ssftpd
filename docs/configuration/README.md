@@ -1,687 +1,574 @@
 # Configuration Guide
 
-This guide covers all configuration options available in Simple-Secure FTP Daemon, from basic settings to advanced features.
+This guide covers all aspects of configuring ssftpd, from basic server settings to advanced features like virtual hosting and SSL/TLS.
 
 ## 📁 Configuration Files
 
-Simple-Secure FTP Daemon supports multiple configuration formats and locations:
+ssftpd uses a hierarchical configuration system with the following structure:
 
-### File Locations
+```
+/etc/ssftpd/
+├── ssftpd.conf              # Main server configuration
+├── users/                   # User definitions
+│   ├── admin.conf          # Admin user configuration
+│   ├── user1.conf          # Regular user configuration
+│   └── anonymous.conf      # Anonymous user configuration
+├── virtual-hosts/           # Virtual host configurations
+│   ├── example.com.conf    # Domain-specific configuration
+│   └── ftp.example.com.conf # Subdomain configuration
+└── ssl/                     # SSL certificate storage
+    ├── server.crt          # Server certificate
+    ├── server.key          # Private key
+    └── ca-bundle.crt       # CA certificate bundle
+```
 
-| Platform | Default Location | Alternative Locations |
-|----------|------------------|----------------------|
-| Linux | `/etc/ssftpd/ssftpd.conf` | `/usr/local/etc/ssftpd/` |
-| macOS | `/usr/local/etc/ssftpd/ssftpd.conf` | `~/Library/Application Support/ssftpd/` |
-| Windows | `C:\Program Files\ssftpd\config\` | `%APPDATA%\ssftpd\` |
+## ⚙️ Main Configuration File
 
-### Configuration Formats
+The main configuration file (`ssftpd.conf`) controls global server settings.
 
-1. **INI Format** (Default): Human-readable, section-based configuration
-2. **JSON Format**: Machine-readable, structured configuration
-3. **Auto-detection**: Automatically detects format based on file extension
-
-## ⚙️ Global Configuration
-
-### Basic Server Settings
+### Basic Server Configuration
 
 ```ini
+[server]
 # Server identification
 server_name = "Simple-Secure FTP Daemon"
 server_version = "0.1.0"
-server_banner = "Welcome to Simple-Secure FTP Daemon"
 
-# Operation mode
-daemon_mode = false          # Run as daemon (true) or foreground (false)
-foreground_mode = true       # Force foreground mode
-working_directory = "/var/ftp"  # Base directory for FTP operations
+# Network settings
+listen_address = "0.0.0.0"
+listen_port = 21
+max_connections = 100
+connection_timeout = 300
 
-# Configuration directories
-user_config_dir = "/etc/ssftpd/users"
-system_config_dir = "/etc/ssftpd"
+# Security settings
+enable_ssl = true
+ssl_port = 990
+require_ssl = false
+chroot_enabled = true
+privilege_dropping = true
+
+# Performance settings
+max_threads = 50
+buffer_size = 8192
+sendfile_enabled = true
 ```
 
-### Feature Flags
-
-```ini
-# Core features
-enable_ssl = true            # Enable SSL/TLS support
-enable_virtual_hosts = true  # Enable virtual hosting
-enable_user_management = true # Enable user management
-enable_rate_limiting = true  # Enable rate limiting
-enable_logging = true        # Enable logging system
-enable_statistics = true     # Enable statistics collection
-enable_monitoring = false    # Enable monitoring endpoints
-```
-
-### Performance Settings
-
-```ini
-# Threading and performance
-thread_pool_size = 8         # Number of worker threads
-max_memory_usage = 256MB     # Maximum memory usage
-enable_compression = false   # Enable file compression
-enable_caching = true        # Enable file caching
-cache_size = 50MB            # Cache size limit
-```
-
-## 🔐 SSL/TLS Configuration
-
-### Basic SSL Settings
+### SSL/TLS Configuration
 
 ```ini
 [ssl]
-enabled = true               # Enable SSL/TLS
+# Certificate settings
 certificate_file = "/etc/ssftpd/ssl/server.crt"
 private_key_file = "/etc/ssftpd/ssl/server.key"
-ca_certificate_file = "/etc/ssftpd/ssl/ca.crt"
+ca_bundle_file = "/etc/ssftpd/ssl/ca-bundle.crt"
+
+# SSL protocol settings
+ssl_protocols = "TLSv1.2,TLSv1.3"
+ssl_ciphers = "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+ssl_prefer_server_ciphers = true
+
+# Certificate validation
+verify_client = false
+client_ca_file = "/etc/ssftpd/ssl/client-ca.crt"
 ```
 
-### Advanced SSL Options
-
-```ini
-[ssl]
-# Cipher configuration
-cipher_suite = "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
-
-# Client certificate requirements
-require_client_cert = false  # Require client certificates
-verify_peer = false          # Verify peer certificates
-
-# TLS version control
-min_tls_version = 1.2        # Minimum TLS version (1.0, 1.1, 1.2, 1.3)
-max_tls_version = 1.3        # Maximum TLS version
-```
-
-### SSL Certificate Management
-
-```bash
-# Generate self-signed certificate
-sudo ssftpd ssl generate \
-  --hostname ftp.example.com \
-  --country US \
-  --state California \
-  --city "San Francisco" \
-  --organization "Example Corp" \
-  --email admin@example.com
-
-# Install existing certificates
-sudo ssftpd ssl install \
-  --hostname ftp.example.com \
-  --certificate /path/to/certificate.crt \
-  --private-key /path/to/private.key \
-  --ca-certificate /path/to/ca.crt
-```
-
-## 📝 Logging Configuration
-
-### Basic Logging
+### Logging Configuration
 
 ```ini
 [logging]
+# Log levels
+log_level = "info"
+access_log_level = "info"
+error_log_level = "error"
+
+# Log files
 log_file = "/var/log/ssftpd/ssftpd.log"
-log_level = "INFO"           # TRACE, DEBUG, INFO, WARN, ERROR, FATAL
-log_to_console = true        # Output to console
-log_to_file = true           # Output to file
-```
-
-### Advanced Logging
-
-```ini
-[logging]
-# Log content control
-log_commands = true          # Log FTP commands
-log_transfers = true         # Log file transfers
-log_errors = true            # Log error messages
-
-# Format and rotation
-log_format = "STANDARD"      # SIMPLE, STANDARD, EXTENDED, JSON, CUSTOM
-custom_format = "[{timestamp}] [{level}] {message}"  # Custom format string
+access_log_file = "/var/log/ssftpd/access.log"
+error_log_file = "/var/log/ssftpd/error.log"
 
 # Log rotation
-max_log_size = 10MB          # Maximum log file size
-max_log_files = 5            # Number of rotated log files
+log_rotation = true
+max_log_size = "100MB"
+max_log_files = 10
+
+# Log format
+log_format = "%Y-%m-%d %H:%M:%S [%LEVEL] %MESSAGE"
+access_log_format = "%TIMESTAMP %IP %USER %COMMAND %RESULT %BYTES"
 ```
 
-### Log Format Examples
+### Rate Limiting
 
 ```ini
-# Standard format
-log_format = "STANDARD"
-# Output: [2024-01-15 10:30:45] [INFO] [Thread-1] Server started
+[rate_limit]
+# Global rate limiting
+enable_rate_limiting = true
+max_connections_per_minute = 60
+max_connections_per_hour = 1000
 
-# Extended format
-log_format = "EXTENDED"
-# Output: [2024-01-15 10:30:45] [INFO] [Thread-1] [main.cpp:123] Server started
+# Per-IP rate limiting
+per_ip_limiting = true
+max_connections_per_ip_per_minute = 10
+max_connections_per_ip_per_hour = 100
 
-# JSON format
-log_format = "JSON"
-# Output: {"timestamp":"2024-01-15T10:30:45Z","level":"INFO","thread":"Thread-1","message":"Server started"}
+# Per-user rate limiting
+per_user_limiting = true
+max_connections_per_user_per_minute = 5
+max_connections_per_user_per_hour = 50
 
-# Custom format
-log_format = "CUSTOM"
-custom_format = "[{level}] {message} ({timestamp})"
-# Output: [INFO] Server started (2024-01-15 10:30:45)
+# Transfer rate limiting
+max_transfer_rate = "10MB/s"
+max_transfer_rate_per_user = "5MB/s"
+```
+
+## 👥 User Configuration
+
+User configurations are stored in separate files under `/etc/ssftpd/users/`.
+
+### Admin User Configuration
+
+```ini
+[user:admin]
+# Basic user info
+username = "admin"
+password_hash = "$2y$10$..."
+full_name = "Administrator"
+email = "admin@example.com"
+description = "System administrator"
+
+# Home directory
+home_directory = "/var/ftp/admin"
+chroot_directory = "/var/ftp"
+
+# Permissions
+permissions = "READ,WRITE,DELETE,UPLOAD,DOWNLOAD,ADMIN"
+can_create_directories = true
+can_delete_files = true
+can_rename_files = true
+
+# Connection limits
+max_connections = 10
+max_concurrent_transfers = 5
+
+# Transfer limits
+max_file_size = "1GB"
+max_transfer_rate = "50MB/s"
+max_daily_transfer = "10GB"
+
+# Session settings
+session_timeout = 3600
+idle_timeout = 1800
+```
+
+### Regular User Configuration
+
+```ini
+[user:user1]
+# Basic user info
+username = "user1"
+password_hash = "$2y$10$..."
+full_name = "Regular User"
+email = "user1@example.com"
+
+# Home directory
+home_directory = "/var/ftp/user1"
+chroot_directory = "/var/ftp/user1"
+
+# Permissions
+permissions = "READ,WRITE,UPLOAD,DOWNLOAD"
+can_create_directories = true
+can_delete_files = false
+can_rename_files = false
+
+# Connection limits
+max_connections = 3
+max_concurrent_transfers = 2
+
+# Transfer limits
+max_file_size = "100MB"
+max_transfer_rate = "10MB/s"
+max_daily_transfer = "1GB"
+
+# Session settings
+session_timeout = 1800
+idle_timeout = 900
+```
+
+### Anonymous User Configuration
+
+```ini
+[user:anonymous]
+# Basic user info
+username = "anonymous"
+password = ""
+full_name = "Anonymous User"
+email = "anonymous@example.com"
+
+# Home directory
+home_directory = "/var/ftp/public"
+chroot_directory = "/var/ftp/public"
+
+# Permissions
+permissions = "READ,DOWNLOAD"
+can_create_directories = false
+can_delete_files = false
+can_rename_files = false
+
+# Connection limits
+max_connections = 5
+max_concurrent_transfers = 1
+
+# Transfer limits
+max_file_size = "50MB"
+max_transfer_rate = "5MB/s"
+max_daily_transfer = "500MB"
+
+# Session settings
+session_timeout = 900
+idle_timeout = 300
+```
+
+## 🌐 Virtual Host Configuration
+
+Virtual hosts allow you to serve different FTP sites for different domains.
+
+### Basic Virtual Host
+
+```ini
+[virtual_host:example.com]
+# Domain settings
+hostname = "example.com"
+ip_address = "192.168.1.100"
+
+# FTP settings
+ftp_port = 21
+ssl_port = 990
+enable_ssl = true
+
+# Document root
+document_root = "/var/ftp/example.com"
+chroot_directory = "/var/ftp"
+
+# SSL certificate
+ssl_certificate = "/etc/ssftpd/ssl/example.com.crt"
+ssl_private_key = "/etc/ssftpd/ssl/example.com.key"
+
+# User access
+allowed_users = "admin,user1,anonymous"
+default_user = "anonymous"
+
+# Custom settings
+max_connections = 50
+connection_timeout = 600
+```
+
+### Advanced Virtual Host
+
+```ini
+[virtual_host:ftp.example.com]
+# Domain settings
+hostname = "ftp.example.com"
+ip_address = "192.168.1.101"
+
+# FTP settings
+ftp_port = 2121
+ssl_port = 9990
+enable_ssl = true
+require_ssl = true
+
+# Document root
+document_root = "/var/ftp/ftp.example.com"
+chroot_directory = "/var/ftp/ftp.example.com"
+
+# SSL certificate
+ssl_certificate = "/etc/ssftpd/ssl/ftp.example.com.crt"
+ssl_private_key = "/etc/ssftpd/ssl/ftp.example.com.key"
+
+# User access
+allowed_users = "admin,user2"
+default_user = "user2"
+
+# Custom settings
+max_connections = 25
+connection_timeout = 300
+max_file_size = "500MB"
+max_transfer_rate = "25MB/s"
+
+# Custom welcome message
+welcome_message = "Welcome to ftp.example.com - Secure File Transfer"
 ```
 
 ## 🔒 Security Configuration
-
-### Basic Security
-
-```ini
-[security]
-chroot_enabled = false       # Enable chroot jail
-chroot_directory = "/var/ftp" # Chroot base directory
-drop_privileges = true       # Drop root privileges after startup
-run_as_user = "ftp"          # User to run as
-run_as_group = "ftp"         # Group to run as
-```
 
 ### Access Control
 
 ```ini
 [security]
-# Anonymous access
-allow_anonymous = false       # Allow anonymous users
-allow_guest = false          # Allow guest users
-
-# SSL requirements
-require_ssl = false          # Require SSL for all connections
-
-# Command restrictions
-allowed_commands = ["USER", "PASS", "QUIT", "PWD", "CWD", "LIST", "RETR", "STOR"]
-denied_commands = ["SITE", "SYST", "HELP"]
-
-# Authentication limits
-max_login_attempts = 3       # Maximum failed login attempts
-login_timeout = 30           # Login timeout in seconds
-session_timeout = 3600       # Session timeout in seconds
-```
-
-### Advanced Security Features
-
-```ini
-[security]
-# Path restrictions
-restrict_paths = true        # Enable path restrictions
-allowed_paths = ["/var/ftp/public", "/var/ftp/shared"]
-denied_paths = ["/var/ftp/private", "/var/ftp/admin"]
-
 # IP restrictions
-allowed_ips = ["192.168.1.0/24", "10.0.0.0/8"]
-denied_ips = ["192.168.1.100", "10.0.0.100"]
+allowed_networks = "192.168.1.0/24,10.0.0.0/8"
+blocked_networks = "192.168.1.100,10.0.0.100"
+enable_geo_blocking = false
+allowed_countries = "US,CA,GB,DE"
 
-# Time restrictions
-allowed_hours = ["09:00-17:00"]  # Business hours only
-allowed_days = ["Monday-Friday"]  # Weekdays only
+# User restrictions
+max_failed_logins = 3
+account_lockout_duration = 1800
+password_policy = "strong"
+min_password_length = 8
+require_special_chars = true
+
+# Session security
+enable_session_tracking = true
+max_sessions_per_user = 5
+session_timeout = 3600
+idle_timeout = 1800
+
+# File security
+scan_uploads = true
+max_filename_length = 255
+forbidden_extensions = "exe,com,bat,sh"
 ```
 
-## 📡 Connection Configuration
-
-### Network Settings
+### Chroot Configuration
 
 ```ini
-[connection]
-bind_address = "0.0.0.0"     # IP address to bind to
-bind_port = 21               # Port to listen on
-max_connections = 100        # Maximum concurrent connections
-max_connections_per_ip = 10  # Maximum connections per IP address
-backlog = 50                 # Connection queue size
+[chroot]
+# Global chroot settings
+enable_chroot = true
+chroot_base = "/var/ftp"
+
+# Per-user chroot
+user_chroot_enabled = true
+user_chroot_base = "/var/ftp/users"
+
+# Chroot exceptions
+chroot_exceptions = "admin"
+admin_chroot_base = "/var/ftp"
+
+# Chroot security
+chroot_allow_symlinks = false
+chroot_allow_hardlinks = false
+chroot_allow_devices = false
 ```
 
-### Timeout Settings
+## 📊 Monitoring and Statistics
+
+### Performance Monitoring
 
 ```ini
-[connection]
-connection_timeout = 300      # Connection establishment timeout
-data_timeout = 300           # Data transfer timeout
-idle_timeout = 600           # Idle connection timeout
+[monitoring]
+# Enable monitoring
+enable_monitoring = true
+monitoring_port = 8080
+monitoring_interface = "127.0.0.1"
 
-# Keep-alive settings
-keep_alive = true            # Enable TCP keep-alive
-keep_alive_interval = 60     # Keep-alive interval
-keep_alive_probes = 3        # Keep-alive probe count
+# Metrics collection
+collect_connection_stats = true
+collect_transfer_stats = true
+collect_user_stats = true
+collect_system_stats = true
+
+# Statistics retention
+stats_retention_days = 30
+stats_cleanup_interval = 86400
+
+# Performance thresholds
+max_cpu_usage = 80
+max_memory_usage = 80
+max_disk_usage = 90
 ```
 
-### Performance Options
+### Logging and Auditing
 
 ```ini
-[connection]
-tcp_nodelay = true           # Enable TCP_NODELAY
-reuse_address = true         # Enable SO_REUSEADDR
-tcp_fastopen = false         # Enable TCP Fast Open
-```
+[auditing]
+# Audit logging
+enable_audit_log = true
+audit_log_file = "/var/log/ssftpd/audit.log"
+audit_log_level = "info"
 
-## 📤 Transfer Configuration
+# Audit events
+audit_user_login = true
+audit_user_logout = true
+audit_file_upload = true
+audit_file_download = true
+audit_file_delete = true
+audit_directory_create = true
+audit_directory_delete = true
 
-### File Transfer Settings
-
-```ini
-[transfer]
-max_file_size = 0            # Maximum file size (0 = unlimited)
-max_transfer_rate = 0        # Maximum transfer rate (0 = unlimited)
-allow_overwrite = true       # Allow file overwrites
-allow_resume = true          # Allow transfer resumption
-temp_directory = "/tmp/ssftpd"  # Temporary file directory
-```
-
-### Transfer Optimization
-
-```ini
-[transfer]
-buffer_size = 8192           # Transfer buffer size
-use_sendfile = true          # Use sendfile() for optimization
-use_mmap = false             # Use memory mapping
-enable_compression = false   # Enable transfer compression
-
-# File type restrictions
-allowed_extensions = ["txt", "pdf", "doc", "docx", "jpg", "png", "gif"]
-denied_extensions = ["exe", "bat", "sh", "com"]
-```
-
-### Advanced Transfer Features
-
-```ini
-[transfer]
-# Bandwidth control
-bandwidth_limit = 0          # Global bandwidth limit
-per_user_bandwidth = true    # Apply bandwidth limits per user
-per_connection_bandwidth = false # Apply bandwidth limits per connection
-
-# Transfer validation
-validate_checksums = false   # Validate file checksums
-checksum_algorithm = "MD5"   # Checksum algorithm (MD5, SHA1, SHA256)
-```
-
-## 🌐 Passive Mode Configuration
-
-### Basic Passive Settings
-
-```ini
-[passive]
-enabled = true               # Enable passive mode
-min_port = 1024              # Minimum passive port
-max_port = 65535             # Maximum passive port
-```
-
-### Advanced Passive Configuration
-
-```ini
-[passive]
-# IP address configuration
-external_ip = ""             # External IP address for NAT
-local_ip = ""                # Local IP address for binding
-use_external_ip = false      # Use external IP for passive connections
-use_local_ip = false         # Use local IP for passive connections
-
-# Port restrictions
-allowed_ports = []           # Specific allowed ports
-denied_ports = []            # Specific denied ports
-
-# NAT and firewall support
-nat_enabled = false          # Enable NAT support
-firewall_friendly = true     # Firewall-friendly mode
-```
-
-## 🚦 Rate Limiting Configuration
-
-### Basic Rate Limiting
-
-```ini
-[rate_limit]
-enabled = true               # Enable rate limiting
-max_requests_per_minute = 1000
-max_connections_per_minute = 100
-max_transfers_per_minute = 50
-max_bytes_per_minute = 100MB
-window_size = 60             # Time window in seconds
-```
-
-### Advanced Rate Limiting
-
-```ini
-[rate_limit]
-# Per-entity limiting
-per_ip_limiting = true       # Apply limits per IP address
-per_user_limiting = true     # Apply limits per user
-per_virtual_host_limiting = false # Apply limits per virtual host
-
-# Burst handling
-burst_enabled = true         # Allow burst traffic
-burst_multiplier = 2.0       # Burst multiplier
-burst_duration = 10          # Burst duration in seconds
-
-# Adaptive limiting
-adaptive_limiting = false    # Enable adaptive rate limiting
-adaptive_window = 300        # Adaptive window size
-```
-
-## 🏠 Virtual Host Configuration
-
-### Basic Virtual Host
-
-```ini
-[virtual_hosts.default]
-hostname = "default"         # Virtual host hostname
-document_root = "/var/ftp"   # Document root directory
-welcome_message = "Welcome to Simple-Secure FTP Daemon"
-banner_message = "Simple-Secure FTP Daemon Ready"
-enabled = true               # Enable this virtual host
-default = true               # Set as default virtual host
-```
-
-### Virtual Host SSL
-
-```ini
-[virtual_hosts.example.ssl]
-enabled = true               # Enable SSL for this virtual host
-certificate_file = "/etc/ssl/certs/example.com.crt"
-private_key_file = "/etc/ssl/private/example.com.key"
-ca_certificate_file = "/etc/ssl/certs/ca.crt"
-```
-
-### Virtual Host Security
-
-```ini
-[virtual_hosts.example.security]
-chroot_enabled = true        # Enable chroot for this virtual host
-chroot_directory = "/var/ftp/example"
-drop_privileges = true
-run_as_user = "ftp"
-run_as_group = "ftp"
-allow_anonymous = false
-allow_guest = false
-require_ssl = true           # Require SSL for this virtual host
-```
-
-### Virtual Host Transfer Settings
-
-```ini
-[virtual_hosts.example.transfer]
-max_file_size = 100MB        # Maximum file size for this virtual host
-max_transfer_rate = 1MB      # Maximum transfer rate
-allow_overwrite = false      # Disallow file overwrites
-allow_resume = true          # Allow transfer resumption
-```
-
-## 👤 User Configuration
-
-### Basic User
-
-```ini
-[users.myuser]
-username = "myuser"          # Username
-password_hash = "$2y$10$hashed_password"  # Hashed password
-home_directory = "/var/ftp/myuser"  # User home directory
-shell = "/bin/false"         # User shell
-group = "ftp"                # User group
-enabled = true               # Enable this user
-```
-
-### User Types
-
-```ini
-[users.anonymous]
-username = "anonymous"       # Anonymous user
-password_hash = ""           # No password for anonymous
-home_directory = "/var/ftp/public"
-anonymous = true             # Mark as anonymous user
-guest = false                # Not a guest user
-
-[users.guest]
-username = "guest"           # Guest user
-password_hash = ""
-home_directory = "/var/ftp/guest"
-anonymous = false
-guest = true                 # Mark as guest user
-```
-
-### User Permissions
-
-```ini
-[users.admin]
-# Full permissions
-permissions = ["READ", "WRITE", "DELETE", "RENAME", "MKDIR", "RMDIR", 
-               "LIST", "UPLOAD", "DOWNLOAD", "APPEND", "ADMIN"]
-
-# No denied operations
-denied_operations = []
-
-[users.restricted]
-# Limited permissions
-permissions = ["READ", "LIST", "DOWNLOAD"]
-denied_operations = ["WRITE", "DELETE", "UPLOAD", "ADMIN"]
-```
-
-### User Restrictions
-
-```ini
-[users.limited]
-# Connection limits
-max_connections = 2          # Maximum concurrent connections
-max_transfer_rate = 512KB    # Maximum transfer rate
-max_file_size = 50MB         # Maximum file size
-
-# Session management
-session_timeout = 1800       # 30 minutes session timeout
-
-# Path restrictions
-allowed_paths = ["/var/ftp/public", "/var/ftp/shared"]
-denied_paths = ["/var/ftp/private", "/var/ftp/admin"]
+# Audit retention
+audit_log_retention_days = 90
+audit_log_rotation = true
 ```
 
 ## 🔧 Advanced Configuration
 
-### Environment Variables
-
-```bash
-# Override configuration with environment variables
-export SIMPLE_FTPD_CONFIG_FILE="/path/to/config.conf"
-export SIMPLE_FTPD_LOG_LEVEL="DEBUG"
-export SIMPLE_FTPD_BIND_ADDRESS="127.0.0.1"
-export SIMPLE_FTPD_BIND_PORT="2121"
-```
-
-### Configuration Inheritance
+### Custom Commands
 
 ```ini
-# Global settings apply to all virtual hosts
-enable_ssl = true
-max_connections = 100
+[commands]
+# Enable/disable commands
+enable_help = true
+enable_site = true
+enable_syst = true
+enable_stat = true
+enable_noop = true
 
-# Virtual host specific overrides
-[virtual_hosts.secure]
-enable_ssl = true            # Override global setting
-max_connections = 50         # Override global setting
-
-[virtual_hosts.public]
-enable_ssl = false           # Override global setting
-max_connections = 200        # Override global setting
+# Custom commands
+custom_commands = "version,status,info"
+version_command = "ssftpd version 0.1.0"
+status_command = "Server is running normally"
+info_command = "Simple-Secure FTP Daemon"
 ```
 
-### Configuration Validation
+### File Transfer Optimization
 
-```bash
-# Validate configuration file
-ssftpd --test-config --config /etc/ssftpd/ssftpd.conf
+```ini
+[transfer]
+# Buffer settings
+read_buffer_size = 8192
+write_buffer_size = 8192
+transfer_buffer_size = 65536
 
-# Validate and show detailed results
-ssftpd --validate --config /etc/ssftpd/ssftpd.conf
+# Optimization
+enable_sendfile = true
+enable_mmap = true
+enable_zero_copy = true
+
+# Compression
+enable_compression = false
+compression_level = 6
+compression_types = "gzip,bzip2"
+
+# Checksums
+verify_checksums = true
+checksum_algorithms = "md5,sha1,sha256"
 ```
 
-## 📊 Configuration Examples
+## 📝 Configuration Examples
 
 ### Minimal Configuration
 
 ```ini
-# Minimal working configuration
-server_name = "My FTP Server"
-bind_address = "0.0.0.0"
-bind_port = 21
-working_directory = "/var/ftp"
+[server]
+listen_address = "0.0.0.0"
+listen_port = 21
 enable_ssl = false
-enable_user_management = true
 
-[users.admin]
-username = "admin"
-password_hash = "$2y$10$hashed_password"
-home_directory = "/var/ftp/admin"
-permissions = ["READ", "WRITE", "LIST", "UPLOAD", "DOWNLOAD"]
+[logging]
+log_level = "info"
+log_file = "/var/log/ssftpd/ssftpd.log"
+
+[user:anonymous]
+username = "anonymous"
+password = ""
+home_directory = "/var/ftp/public"
+permissions = "READ,DOWNLOAD"
 ```
 
 ### Production Configuration
 
 ```ini
-# Production-ready configuration
+[server]
 server_name = "Production FTP Server"
-daemon_mode = true
-working_directory = "/var/ftp"
-enable_ssl = true
-enable_virtual_hosts = true
-enable_rate_limiting = true
+listen_address = "0.0.0.0"
+listen_port = 21
+max_connections = 200
+connection_timeout = 600
 
 [ssl]
-enabled = true
-certificate_file = "/etc/ssl/certs/ftp.example.com.crt"
-private_key_file = "/etc/ssl/private/ftp.example.com.key"
-min_tls_version = 1.2
+enable_ssl = true
+certificate_file = "/etc/ssftpd/ssl/server.crt"
+private_key_file = "/etc/ssftpd/ssl/server.key"
+require_ssl = true
 
 [security]
-chroot_enabled = true
-chroot_directory = "/var/ftp/chroot"
-drop_privileges = true
-run_as_user = "ftp"
-max_login_attempts = 3
+enable_chroot = true
+chroot_base = "/var/ftp"
+max_failed_logins = 3
+account_lockout_duration = 1800
 
-[connection]
-max_connections = 200
-max_connections_per_ip = 20
-connection_timeout = 300
-idle_timeout = 600
+[monitoring]
+enable_monitoring = true
+monitoring_port = 8080
+collect_all_stats = true
 
 [rate_limit]
-enabled = true
-max_requests_per_minute = 2000
-max_connections_per_minute = 200
-max_bytes_per_minute = 1GB
+enable_rate_limiting = true
+max_connections_per_minute = 100
+max_transfer_rate = "50MB/s"
 ```
 
-### Development Configuration
+### High-Security Configuration
 
 ```ini
-# Development configuration
-server_name = "Development FTP Server"
-foreground_mode = true
-debug_mode = true
-verbose_logging = true
-trace_commands = true
+[server]
+server_name = "High-Security FTP Server"
+listen_address = "192.168.1.100"
+listen_port = 21
+max_connections = 50
 
-[logging]
-log_level = "DEBUG"
-log_commands = true
-log_transfers = true
-log_format = "EXTENDED"
+[ssl]
+enable_ssl = true
+require_ssl = true
+certificate_file = "/etc/ssftpd/ssl/server.crt"
+private_key_file = "/etc/ssftpd/ssl/server.key"
+ssl_protocols = "TLSv1.3"
+ssl_ciphers = "ECDHE-RSA-AES256-GCM-SHA384"
 
-[development]
-profile_performance = true
-log_socket_events = "all"
+[security]
+enable_chroot = true
+chroot_base = "/var/ftp"
+privilege_dropping = true
+allowed_networks = "192.168.1.0/24"
+max_failed_logins = 2
+account_lockout_duration = 3600
+password_policy = "strong"
+min_password_length = 12
+
+[auditing]
+enable_audit_log = true
+audit_all_events = true
+audit_log_retention_days = 365
 ```
 
-## 🚨 Configuration Best Practices
+## 🔍 Configuration Validation
 
-### Security Best Practices
-
-1. **Always use SSL/TLS** in production environments
-2. **Enable chroot** for user isolation
-3. **Drop privileges** after startup
-4. **Restrict commands** to only necessary ones
-5. **Use strong passwords** and hash them properly
-6. **Limit connection rates** to prevent abuse
-7. **Monitor logs** regularly for suspicious activity
-
-### Performance Best Practices
-
-1. **Tune buffer sizes** based on your network
-2. **Enable sendfile** for large file transfers
-3. **Use appropriate thread pool sizes** (CPU cores × 2)
-4. **Monitor memory usage** and adjust limits
-5. **Use connection pooling** for high-traffic scenarios
-
-### Maintenance Best Practices
-
-1. **Backup configurations** before major changes
-2. **Test configurations** in staging environments
-3. **Use version control** for configuration files
-4. **Document customizations** and their purposes
-5. **Regular security audits** of configurations
-
-## 🔍 Troubleshooting Configuration
-
-### Common Configuration Issues
-
-#### SSL Certificate Problems
-```bash
-# Check certificate validity
-openssl x509 -in /etc/ssftpd/ssl/server.crt -text -noout
-
-# Verify certificate chain
-openssl verify /etc/ssftpd/ssl/server.crt
-
-# Check private key permissions
-ls -la /etc/ssftpd/ssl/server.key
-```
-
-#### Permission Issues
-```bash
-# Check directory permissions
-ls -la /var/ftp/
-ls -la /etc/ssftpd/
-
-# Verify user ownership
-id ftp
-groups ftp
-```
-
-#### Network Issues
-```bash
-# Check port binding
-sudo netstat -tlnp | grep :21
-
-# Test local connectivity
-telnet localhost 21
-
-# Check firewall rules
-sudo ufw status
-sudo firewall-cmd --list-all
-```
-
-### Configuration Validation
+### Test Configuration
 
 ```bash
-# Syntax check
+# Test configuration file syntax
 ssftpd --test-config --config /etc/ssftpd/ssftpd.conf
 
-# Full validation
-ssftpd --validate --config /etc/ssftpd/ssftpd.conf
+# Test configuration with specific user
+ssftpd --test-config --config /etc/ssftpd/ssftpd.conf --user admin
 
-# Check specific sections
-grep -n "\[ssl\]" /etc/ssftpd/ssftpd.conf
-grep -n "\[users" /etc/ssftpd/ssftpd.conf
+# Validate SSL configuration
+ssftpd --test-ssl --config /etc/ssftpd/ssftpd.conf
+```
+
+### Configuration Check
+
+```bash
+# Check configuration file permissions
+ls -la /etc/ssftpd/ssftpd.conf
+
+# Verify SSL certificates
+openssl x509 -in /etc/ssftpd/ssl/server.crt -text -noout
+
+# Check user configurations
+ssftpd-ctl validate-users --config /etc/ssftpd/ssftpd.conf
 ```
 
 ## 📚 Next Steps
 
-Now that you understand the configuration system:
+After configuring your server:
 
-1. **Customize your configuration** based on your needs
-2. **Set up SSL/TLS** for secure connections
-3. **Configure virtual hosts** for multi-domain support
-4. **Implement user management** with proper permissions
-5. **Set up monitoring** and logging
-6. **Test your configuration** thoroughly
-7. **Deploy to production** with security best practices
+1. **Test the configuration**: Use `ssftpd --test-config`
+2. **Start the server**: Use `ssftpd --config /etc/ssftpd/ssftpd.conf`
+3. **Set up users**: See [User Management](../user-guide/user-management.md)
+4. **Configure SSL**: See [SSL Configuration](ssl.md)
+5. **Set up monitoring**: See [Monitoring Guide](../user-guide/monitoring.md)
 
-For more advanced topics, see:
-- [SSL/TLS Configuration](ssl-configuration.md)
-- [Virtual Host Configuration](virtual-hosts.md)
-- [Security Hardening](security.md)
-- [Performance Tuning](performance.md)
+---
+
+**Need help?** Check our [Configuration Examples](../examples/README.md) or open an [issue on GitHub](https://github.com/ssftpd/ssftpd/issues).
