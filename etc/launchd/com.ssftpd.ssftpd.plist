@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ssftpd.ssftpd</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/sbin/ssftpd</string>
+        <string>--config</string>
+        <string>/usr/local/etc/ssftpd/deployment/ssftpd.conf</string>
+    </array>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>WorkingDirectory</key>
+    <string>/usr/local/var/ssftpd</string>
+    
+    <key>StandardOutPath</key>
+    <string>/usr/local/var/log/ssftpd/ssftpd.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/usr/local/var/log/ssftpd/ssftpd-error.log</string>
+    
+    <key>UserName</key>
+    <string>ssftpd</string>
+    
+    <key>GroupName</key>
+    <string>ssftpd</string>
+    
+    <key>ProcessType</key>
+    <string>Background</string>
+    
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    
+    <key>ExitTimeOut</key>
+    <integer>30</integer>
+    
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+        <key>NumberOfProcesses</key>
+        <integer>4096</integer>
+    </dict>
+    
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>32768</integer>
+        <key>NumberOfProcesses</key>
+        <integer>2048</integer>
+    </dict>
+</dict>
+</plist>
