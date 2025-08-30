@@ -1,4 +1,4 @@
-# Simple FTP Daemon - Project Status
+# Simple-Secure FTP Daemon - Project Status
 
 ## 🎯 Project Overview
 
