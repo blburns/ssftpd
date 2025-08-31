@@ -204,7 +204,8 @@ void FTPConnection::handlePASS(const std::vector<std::string>& args) {
 }
 
 void FTPConnection::handleQUIT(const std::vector<std::string>& args) {
-    sendResponse(221, "Goodbye.");
+    (void)args; // Suppress unused parameter warning
+    sendResponse(221, "Goodbye");
     disconnect();
 }
 
@@ -226,12 +227,9 @@ void FTPConnection::handleFEAT(const std::vector<std::string>& args) {
 }
 
 void FTPConnection::handlePWD(const std::vector<std::string>& args) {
-    if (state_ != FTPConnectionState::AUTHENTICATED) {
-        sendResponse(530, "Please login with USER and PASS.");
-        return;
-    }
-    
-    sendResponse(257, "\"" + current_directory_ + "\" is current directory.");
+    (void)args; // Suppress unused parameter warning
+    std::string response = "257 \"" + current_directory_ + "\" is current directory";
+    sendResponse(257, response);
 }
 
 void FTPConnection::handleCWD(const std::vector<std::string>& args) {
@@ -258,24 +256,18 @@ void FTPConnection::handleCWD(const std::vector<std::string>& args) {
 }
 
 void FTPConnection::handleLIST(const std::vector<std::string>& args) {
-    if (state_ != FTPConnectionState::AUTHENTICATED) {
-        sendResponse(530, "Please login with USER and PASS.");
-        return;
-    }
+    (void)args; // Suppress unused parameter warning
+    // Simple directory listing (in production, implement proper directory listing)
+    std::string listing = "drwxr-xr-x 2 user group 4096 Jan 1 00:00 .\r\n"
+                          "drwxr-xr-x 2 user group 4096 Jan 1 00:00 ..\r\n";
     
-    // Simple directory listing (in production, implement actual listing)
-    sendResponse(150, "Opening ASCII mode data connection for file list");
-    
-    // Send dummy directory listing
-    std::string listing = "drwxr-xr-x 2 user group 4096 Jan 1 00:00 .\n";
-    listing += "drwxr-xr-x 2 user group 4096 Jan 1 00:00 ..\n";
-    listing += "-rw-r--r-- 1 user group 1024 Jan 1 00:00 README.txt\n";
-    
+    sendResponse(150, "Here comes the directory listing");
     sendData(listing.c_str(), listing.length());
-    sendResponse(226, "Transfer complete.");
+    sendResponse(226, "Directory send OK");
 }
 
 void FTPConnection::handleNOOP(const std::vector<std::string>& args) {
+    (void)args; // Suppress unused parameter warning
     sendResponse(200, "OK");
 }
 
