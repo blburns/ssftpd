@@ -1,0 +1,8 @@
+[Unit]
+Description=Simple TFTP Daemon Instances
+Documentation=man:simple-tftpd(8)
+Requires=simple-tftpd@firmware.service simple-tftpd@pxe.service
+Wants=simple-tftpd@firmware.service simple-tftpd@pxe.service
+
+[Install]
+WantedBy=multi-user.target

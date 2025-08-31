@@ -1,0 +1,37 @@
+[Unit]
+Description=Simple TFTP Daemon Instance %i
+Documentation=man:simple-tftpd(8)
+After=network.target
+Wants=network.target
+PartOf=simple-tftpd.target
+
+[Service]
+Type=simple
+User=tftp
+Group=tftp
+ExecStart=/usr/bin/simple-tftpd start --config /etc/simple-tftpd/instances/%i.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=simple-tftpd-%i
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/tftp/%i /var/log/simple-tftpd/%i
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

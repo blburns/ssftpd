@@ -1,0 +1,195 @@
+#!/bin/bash
+#
+# simple-tftpd    Simple TFTP Daemon
+#
+# chkconfig: 2345 85 15
+# description: Simple TFTP Daemon - lightweight TFTP server
+# processname: simple-tftpd
+# pidfile: /var/run/simple-tftpd.pid
+# config: /etc/simple-tftpd/simple-tftpd.conf
+
+### BEGIN INIT INFO
+# Provides: simple-tftpd
+# Required-Start: $network $remote_fs
+# Required-Stop: $network $remote_fs
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Simple TFTP Daemon
+# Description: Simple TFTP Daemon - lightweight TFTP server
+### END INIT INFO
+
+# Source function library
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration
+. /etc/sysconfig/network
+
+# Check that networking is up
+[ "$NETWORKING" = "no" ] && exit 0
+
+# Program name
+PROG="simple-tftpd"
+PROG_DIR="/usr/bin"
+PROG_CONFIG="/etc/simple-tftpd/simple-tftpd.conf"
+PROG_PID="/var/run/simple-tftpd.pid"
+PROG_USER="tftp"
+PROG_GROUP="tftp"
+PROG_LOCK="/var/lock/subsys/simple-tftpd"
+
+# Default options
+DAEMON_OPTS="start --config $PROG_CONFIG"
+
+# Return values
+RETVAL=0
+
+# Function to check if daemon is running
+is_running() {
+    [ -f "$PROG_PID" ] && kill -0 $(cat "$PROG_PID") 2>/dev/null
+}
+
+# Function to start the daemon
+start() {
+    echo -n "Starting $PROG: "
+    
+    # Check if daemon is already running
+    if is_running; then
+        echo "already running"
+        return 1
+    fi
+    
+    # Check if config file exists
+    if [ ! -f "$PROG_CONFIG" ]; then
+        echo "configuration file $PROG_CONFIG not found"
+        return 1
+    fi
+    
+    # Create directories if they don't exist
+    mkdir -p /var/tftp /var/log/simple-tftpd
+    chown $PROG_USER:$PROG_GROUP /var/tftp /var/log/simple-tftpd
+    
+    # Start the daemon
+    daemon --user $PROG_USER --pidfile $PROG_PID $PROG_DIR/$PROG $DAEMON_OPTS
+    
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        echo "success"
+        touch $PROG_LOCK
+    else
+        echo "failed"
+    fi
+    
+    return $RETVAL
+}
+
+# Function to stop the daemon
+stop() {
+    echo -n "Stopping $PROG: "
+    
+    if ! is_running; then
+        echo "not running"
+        return 1
+    fi
+    
+    # Stop the daemon
+    killproc -p $PROG_PID $PROG
+    
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        echo "success"
+        rm -f $PROG_LOCK $PROG_PID
+    else
+        echo "failed"
+    fi
+    
+    return $RETVAL
+}
+
+# Function to restart the daemon
+restart() {
+    stop
+    sleep 2
+    start
+}
+
+# Function to reload configuration
+reload() {
+    echo -n "Reloading $PROG configuration: "
+    
+    if ! is_running; then
+        echo "not running"
+        return 1
+    fi
+    
+    # Send SIGHUP to reload configuration
+    kill -HUP $(cat $PROG_PID) 2>/dev/null
+    
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        echo "success"
+    else
+        echo "failed"
+    fi
+    
+    return $RETVAL
+}
+
+# Function to check status
+status() {
+    if is_running; then
+        echo "$PROG is running (pid $(cat $PROG_PID))"
+        return 0
+    else
+        echo "$PROG is stopped"
+        return 1
+    fi
+}
+
+# Function to check configuration
+configtest() {
+    echo -n "Testing $PROG configuration: "
+    
+    if [ ! -f "$PROG_CONFIG" ]; then
+        echo "configuration file $PROG_CONFIG not found"
+        return 1
+    fi
+    
+    # Test configuration
+    $PROG_DIR/$PROG test --config $PROG_CONFIG
+    
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        echo "success"
+    else
+        echo "failed"
+    fi
+    
+    return $RETVAL
+}
+
+# Main script logic
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    reload)
+        reload
+        ;;
+    status)
+        status
+        ;;
+    configtest)
+        configtest
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|reload|status|configtest}"
+        RETVAL=1
+        ;;
+esac
+
+exit $RETVAL

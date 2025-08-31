@@ -13,7 +13,7 @@ namespace ssftpd {
 Logger::Logger(const std::string& log_file, LogLevel level, bool log_to_console, bool log_to_file)
     : log_file_(log_file)
     , log_level_(level)
-    , log_format_(LogFormat::DEFAULT)
+    , log_format_(LogFormat::SIMPLE)
     , custom_format_("")
     , log_to_console_(log_to_console)
     , log_to_file_(log_to_file)
@@ -128,12 +128,12 @@ std::string Logger::formatMessage(LogLevel level, const std::string& message,
             oss << "[" << getLogLevelString(level) << "] " << message;
             break;
             
-        case LogFormat::DETAILED:
+        case LogFormat::STANDARD:
             oss << getCurrentTimestamp() << " [" << getLogLevelString(level) << "] "
                 << message;
             break;
             
-        case LogFormat::VERBOSE:
+        case LogFormat::EXTENDED:
             oss << getCurrentTimestamp() << " [" << getLogLevelString(level) << "] "
                 << "[" << getCurrentThreadId() << "] "
                 << message;
@@ -190,7 +190,9 @@ bool Logger::shouldRotateLog() const {
         return false;
     }
     
-    auto current_pos = log_stream_.tellp();
+    // Use const_cast to access non-const method on const object
+    auto& non_const_stream = const_cast<std::ofstream&>(log_stream_);
+    auto current_pos = non_const_stream.tellp();
     return current_pos > 0 && static_cast<size_t>(current_pos) > max_log_size_;
 }
 
@@ -202,7 +204,7 @@ void Logger::rotateLog() {
     }
     
     // Rotate existing log files
-    for (int i = max_log_files_ - 1; i > 0; --i) {
+    for (size_t i = max_log_files_ - 1; i > 0; --i) {
         std::string old_name = log_file_ + "." + std::to_string(i);
         std::string new_name = log_file_ + "." + std::to_string(i + 1);
         
@@ -315,8 +317,20 @@ void Logger::updatePerformanceMetrics(const std::chrono::steady_clock::time_poin
     auto duration_us = duration.count();
     
     total_log_time_ += duration_us;
-    max_log_time_ = std::max(max_log_time_, static_cast<uint64_t>(duration_us));
-    min_log_time_ = std::min(min_log_time_, static_cast<uint64_t>(duration_us));
+    
+    // Handle atomic min/max operations properly
+    uint64_t current_max = max_log_time_.load();
+    while (duration_us > current_max && 
+           !max_log_time_.compare_exchange_weak(current_max, duration_us)) {
+        // Loop until we successfully update the max value
+    }
+    
+    uint64_t current_min = min_log_time_.load();
+    while (duration_us < current_min && 
+           !min_log_time_.compare_exchange_weak(current_min, duration_us)) {
+        // Loop until we successfully update the min value
+    }
+    
     log_calls_++;
 }
 
@@ -408,7 +422,6 @@ void Logger::setAsyncLogging(bool enable) {
     }
 }
 
-// Helper methods that need to be implemented
 std::string Logger::formatCustomMessage(LogLevel level, const std::string& message, 
                                        const std::string& file, int line, const std::string& function) {
     // Simple custom format implementation

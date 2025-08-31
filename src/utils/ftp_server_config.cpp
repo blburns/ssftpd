@@ -41,10 +41,10 @@ bool FTPServerConfig::loadFromJSON(const std::string& json_config) {
     return true;
 }
 
-bool FTPServerConfig::validate() {
-    // Clear previous errors and warnings
-    errors_.clear();
-    warnings_.clear();
+bool FTPServerConfig::validate() const {
+    // Clear previous errors and warnings (using const_cast since we need to modify)
+    const_cast<FTPServerConfig*>(this)->errors_.clear();
+    const_cast<FTPServerConfig*>(this)->warnings_.clear();
     
     // Validate SSL configuration
     if (!validateSSL()) {
@@ -72,16 +72,14 @@ bool FTPServerConfig::validate() {
     }
     
     // Add warnings for potential issues
-    if (connection.bind_address == "0.0.0.0") {
-        warnings_.push_back("Binding to 0.0.0.0 allows connections from any IP address");
-    }
+    const_cast<FTPServerConfig*>(this)->warnings_.push_back("Binding to 0.0.0.0 allows connections from any IP address");
     
     if (security.allow_anonymous) {
-        warnings_.push_back("Anonymous access is enabled - consider security implications");
+        const_cast<FTPServerConfig*>(this)->warnings_.push_back("Anonymous access is enabled - consider security implications");
     }
     
     if (connection.max_connections > 1000) {
-        warnings_.push_back("High connection limit may impact performance");
+        const_cast<FTPServerConfig*>(this)->warnings_.push_back("High connection limit may impact performance");
     }
     
     return errors_.empty();
