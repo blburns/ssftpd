@@ -54,13 +54,13 @@ void printUsage() {
     std::cout << "  status               Show server status" << std::endl;
     std::cout << "  reload               Reload configuration" << std::endl;
     std::cout << "  test                 Test server configuration" << std::endl;
-    std::cout << "  user                 Manage users" << std::cout << "  virtual              Manage virtual hosts" << std::endl;
+    std::cout << "  user                 Manage users" << std::endl;
+    std::cout << "  virtual              Manage virtual hosts" << std::endl;
     std::cout << "  ssl                  Manage SSL certificates" << std::endl;
     
     std::cout << "\nUser Subcommands:" << std::endl;
     std::cout << "  add                  Add new user" << std::endl;
     std::cout << "  remove               Remove user" << std::endl;
-    std::endl;
     std::cout << "  modify               Modify user" << std::endl;
     std::cout << "  list                 List users" << std::endl;
     std::cout << "  password             Change user password" << std::endl;

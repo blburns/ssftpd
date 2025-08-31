@@ -67,21 +67,76 @@ endif()
 
 # Find jsoncpp for JSON parsing
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp)
-if(NOT JSONCPP_FOUND)
-    # Try to find jsoncpp without pkg-config
-    find_library(JSONCPP_LIBRARIES jsoncpp)
-    find_path(JSONCPP_INCLUDE_DIRS json/json.h)
-    if(JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
-        set(JSONCPP_FOUND TRUE)
-        set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES})
-        set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIRS})
+# Temporarily disable jsoncpp to get project building
+# pkg_check_modules(JSONCPP jsoncpp)
+set(JSONCPP_FOUND FALSE)
+
+# For macOS, try multiple approaches to find jsoncpp
+if(PLATFORM_MACOS)
+    if(NOT JSONCPP_FOUND)
+        # Try to find jsoncpp without pkg-config
+        find_library(JSONCPP_LIBRARIES jsoncpp)
+        find_path(JSONCPP_INCLUDE_DIRS json/json.h)
+        if(JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+            set(JSONCPP_FOUND TRUE)
+            set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES})
+            set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIRS})
+        endif()
+    endif()
+    
+    # If still not found, try common Homebrew paths
+    if(NOT JSONCPP_FOUND)
+        find_library(JSONCPP_LIBRARIES 
+            NAMES jsoncpp
+            PATHS 
+            /usr/local/lib
+            /usr/local/Cellar/jsoncpp/*/lib
+            /opt/homebrew/lib
+            /opt/homebrew/Cellar/jsoncpp/*/lib
+            NO_DEFAULT_PATH
+        )
+        find_path(JSONCPP_INCLUDE_DIRS 
+            NAMES json/json.h
+            PATHS 
+            /usr/local/include
+            /usr/local/Cellar/jsoncpp/*/include
+            /opt/homebrew/include
+            /opt/homebrew/Cellar/jsoncpp/*/include
+            NO_DEFAULT_PATH
+        )
+        if(JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+            set(JSONCPP_FOUND TRUE)
+            message(STATUS "Found jsoncpp via direct path search")
+        endif()
+    endif()
+    
+    # Ensure we have the full library path
+    if(JSONCPP_FOUND AND JSONCPP_LIBRARIES)
+        get_filename_component(JSONCPP_LIBRARY_DIR ${JSONCPP_LIBRARIES} DIRECTORY)
+        if(JSONCPP_LIBRARY_DIR)
+            link_directories(${JSONCPP_LIBRARY_DIR})
+            message(STATUS "Added jsoncpp library directory: ${JSONCPP_LIBRARY_DIR}")
+        endif()
+    endif()
+else()
+    # Non-macOS systems
+    if(NOT JSONCPP_FOUND)
+        find_library(JSONCPP_LIBRARIES jsoncpp)
+        find_path(JSONCPP_INCLUDE_DIRS json/json.h)
+        if(JSONCPP_LIBRARIES AND JSONCPP_INCLUDE_DIRS)
+            set(JSONCPP_FOUND TRUE)
+            set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES})
+            set(JSONCPP_INCLUDE_DIRS ${JSONCPP_INCLUDE_DIRS})
+        endif()
     endif()
 endif()
 
 if(NOT JSONCPP_FOUND)
     message(WARNING "jsoncpp not found. JSON configuration parsing will not be available.")
     add_definitions(-DDISABLE_JSON_CONFIG)
+    # Set empty variables to avoid linking errors
+    set(JSONCPP_LIBRARIES "")
+    set(JSONCPP_INCLUDE_DIRS "")
 else()
     message(STATUS "Found jsoncpp: ${JSONCPP_LIBRARIES}")
     add_definitions(-DENABLE_JSON_CONFIG)

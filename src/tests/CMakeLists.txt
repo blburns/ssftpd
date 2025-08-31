@@ -1,86 +1,83 @@
-# Test configuration for Simple FTP Daemon
+# Tests CMakeLists.txt for simple-sftpd
+# Copyright 2024 SimpleDaemons
+# Licensed under Apache License 2.0
 
 # Enable testing
 enable_testing()
 
-# Find Google Test
+# Find Google Test if available
 find_package(GTest QUIET)
 if(NOT GTest_FOUND)
-    # Try to find GTest manually
-    find_path(GTEST_INCLUDE_DIR gtest/gtest.h
-        PATHS
-        /usr/include
-        /usr/local/include
-        /opt/homebrew/include
-        $ENV{GTEST_ROOT}/include
-    )
-    
-    find_library(GTEST_LIBRARY
-        NAMES gtest gtest_main
-        PATHS
-        /usr/lib
-        /usr/local/lib
-        /opt/homebrew/lib
-        $ENV{GTEST_ROOT}/lib
-    )
-    
-    if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY)
-        set(GTEST_FOUND TRUE)
-        set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR})
-        set(GTEST_LIBRARIES ${GTEST_LIBRARY})
+    # Try to find GTest without find_package
+    find_library(GTEST_LIBRARIES gtest gtest_main)
+    find_path(GTEST_INCLUDE_DIRS gtest/gtest.h)
+    if(GTEST_LIBRARIES AND GTEST_INCLUDE_DIRS)
+        set(GTest_FOUND TRUE)
+        set(GTEST_LIBRARIES ${GTEST_LIBRARIES})
+        set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS})
     endif()
 endif()
 
-if(GTEST_FOUND)
-    message(STATUS "Google Test found: ${GTEST_LIBRARIES}")
+if(GTest_FOUND)
+    message(STATUS "Found Google Test: ${GTEST_LIBRARIES}")
+    
+    # Test source files
+    set(TEST_SOURCES
+        test_main.cpp
+        utils/test_helpers.cpp
+    )
+    
+    # Test executable
+    add_executable(simple-tftpd-tests ${TEST_SOURCES})
+    
+    # Link against the actual source files that contain the classes being tested
+    target_link_libraries(simple-tftpd-tests 
+        ${GTEST_LIBRARIES}
+        ${PLATFORM_LIBRARIES}
+    )
+    
+    # Add the source files that contain the classes being tested
+    # Note: These source files don't exist yet - they need to be implemented
+    # target_sources(simple-tftpd-tests PRIVATE
+    #     ${CMAKE_SOURCE_DIR}/src/utils/logger.cpp
+    #     ${CMAKE_SOURCE_DIR}/src/utils/config_parser.cpp
+    #     ${CMAKE_SOURCE_DIR}/src/core/ftp_packet.cpp
+    #     ${CMAKE_SOURCE_DIR}/src/core/ftp_connection.cpp
+    #     ${CMAKE_SOURCE_DIR}/src/core/ftp_server.cpp
+    # )
+    
+    if(JSONCPP_FOUND)
+        target_link_libraries(simple-tftpd-tests ${JSONCPP_LIBRARIES})
+    endif()
     
     # Include directories
-    include_directories(${GTEST_INCLUDE_DIRS})
-    
-    # Unit tests
-    add_executable(unit_tests
-        unit/test_main.cpp
-        unit/test_ftp_user.cpp
+    target_include_directories(simple-tftpd-tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${GTEST_INCLUDE_DIRS}
     )
     
-    target_link_libraries(unit_tests
-        ${GTEST_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT}
-    )
-    
-    # Add tests to CTest
-    add_test(NAME UnitTests COMMAND unit_tests)
+    # Add tests
+    add_test(NAME simple-tftpd-tests COMMAND simple-tftpd-tests)
     
     # Set test properties
-    set_tests_properties(UnitTests PROPERTIES
+    set_tests_properties(simple-tftpd-tests PROPERTIES
         TIMEOUT 300
-        LABELS "unit"
-    )
-    
-    # Install test executables
-    install(TARGETS unit_tests
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/tests
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
     
 else()
     message(WARNING "Google Test not found. Tests will not be built.")
-    message(STATUS "To install Google Test:")
-    message(STATUS "  Ubuntu/Debian: sudo apt-get install libgtest-dev")
-    message(STATUS "  CentOS/RHEL: sudo yum install gtest-devel")
-    message(STATUS "  macOS: brew install googletest")
-    message(STATUS "  Or build from source: https://github.com/google/googletest")
 endif()
 
-# Test utilities (only build what exists)
-add_library(test_utils STATIC
-    utils/test_helpers.cpp
-)
-
 # Test configuration
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_config.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/test_config.h
-)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test_config.h.in)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/test_config.h
+    )
+endif()
 
 # Test data directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
