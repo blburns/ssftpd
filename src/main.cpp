@@ -289,55 +289,62 @@ bool validateConfiguration(const std::string& config_file) {
  * @return true if started successfully, false otherwise
  */
 bool startServer(const std::string& config_file, bool daemon_mode) {
-    // Load configuration
-    auto config = std::make_shared<FTPServerConfig>();
-    if (!config->loadFromFile(config_file)) {
-        std::cerr << "Error: Failed to load configuration file: " << config_file << std::endl;
-        return false;
-    }
+    (void)daemon_mode; // Suppress unused parameter warning
     
-    if (!config->validate()) {
-        std::cerr << "Error: Configuration validation failed:" << std::endl;
-        for (const auto& error : config->getErrors()) {
-            std::cerr << "  " << error << std::endl;
+    try {
+        // Load configuration
+        auto config = std::make_shared<FTPServerConfig>();
+        if (!config->loadFromFile(config_file)) {
+            std::cerr << "Failed to load configuration from " << config_file << std::endl;
+            return false;
         }
+    
+        if (!config->validate()) {
+            std::cerr << "Error: Configuration validation failed:" << std::endl;
+            for (const auto& error : config->getErrors()) {
+                std::cerr << "  " << error << std::endl;
+            }
+            return false;
+        }
+    
+        // Initialize logger
+        g_logger = std::make_shared<Logger>(
+            config->logging.log_file,
+            config->logging.log_level == "TRACE" ? LogLevel::TRACE :
+            config->logging.log_level == "DEBUG" ? LogLevel::DEBUG :
+            config->logging.log_level == "INFO" ? LogLevel::INFO :
+            config->logging.log_level == "WARN" ? LogLevel::WARN :
+            config->logging.log_level == "ERROR" ? LogLevel::ERROR :
+            config->logging.log_level == "FATAL" ? LogLevel::FATAL : LogLevel::INFO,
+            config->logging.log_to_console,
+            config->logging.log_to_file
+        );
+    
+        g_logger->info("Starting Simple FTP Daemon v0.1.0");
+        g_logger->info("Configuration file: " + config_file);
+    
+        // Create and start server
+        g_server = std::make_shared<FTPServer>(config);
+    
+        if (!g_server->start()) {
+            g_logger->error("Failed to start FTP server");
+            return false;
+        }
+    
+        g_logger->info("FTP server started successfully");
+        g_logger->info("Listening on " + config->connection.bind_address + ":" + std::to_string(config->connection.bind_port));
+    
+        // Main server loop
+        while (!g_shutdown_requested && g_server->isRunning()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    
+        g_logger->info("FTP server shutdown complete");
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error starting FTP server: " << e.what() << std::endl;
         return false;
     }
-    
-    // Initialize logger
-    g_logger = std::make_shared<Logger>(
-        config->logging.log_file,
-        config->logging.log_level == "TRACE" ? LogLevel::TRACE :
-        config->logging.log_level == "DEBUG" ? LogLevel::DEBUG :
-        config->logging.log_level == "INFO" ? LogLevel::INFO :
-        config->logging.log_level == "WARN" ? LogLevel::WARN :
-        config->logging.log_level == "ERROR" ? LogLevel::ERROR :
-        config->logging.log_level == "FATAL" ? LogLevel::FATAL : LogLevel::INFO,
-        config->logging.log_to_console,
-        config->logging.log_to_file
-    );
-    
-    g_logger->info("Starting Simple FTP Daemon v0.1.0");
-    g_logger->info("Configuration file: " + config_file);
-    
-    // Create and start server
-    g_server = std::make_shared<FTPServer>(config);
-    
-    if (!g_server->start()) {
-        g_logger->error("Failed to start FTP server");
-        return false;
-    }
-    
-    g_logger->info("FTP server started successfully");
-    g_logger->info("Listening on " + config->connection.bind_address + ":" + std::to_string(config->connection.bind_port));
-    
-    // Main server loop
-    while (!g_shutdown_requested && g_server->isRunning()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    
-    g_logger->info("FTP server shutdown complete");
-    return true;
 }
 
 /**

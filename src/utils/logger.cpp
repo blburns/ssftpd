@@ -320,14 +320,14 @@ void Logger::updatePerformanceMetrics(const std::chrono::steady_clock::time_poin
     
     // Handle atomic min/max operations properly
     uint64_t current_max = max_log_time_.load();
-    while (duration_us > current_max && 
-           !max_log_time_.compare_exchange_weak(current_max, duration_us)) {
+    while (static_cast<uint64_t>(duration_us) > current_max && 
+           !max_log_time_.compare_exchange_weak(current_max, static_cast<uint64_t>(duration_us))) {
         // Loop until we successfully update the max value
     }
     
     uint64_t current_min = min_log_time_.load();
-    while (duration_us < current_min && 
-           !min_log_time_.compare_exchange_weak(current_min, duration_us)) {
+    while (static_cast<uint64_t>(duration_us) < current_min && 
+           !min_log_time_.compare_exchange_weak(current_min, static_cast<uint64_t>(duration_us))) {
         // Loop until we successfully update the min value
     }
     

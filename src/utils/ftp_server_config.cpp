@@ -36,6 +36,7 @@ bool FTPServerConfig::loadFromFile(const std::string& config_file) {
 }
 
 bool FTPServerConfig::loadFromJSON(const std::string& json_config) {
+    (void)json_config; // Suppress unused parameter warning
     // For now, just return true as a placeholder
     // TODO: Implement actual JSON parsing
     return true;
@@ -106,6 +107,7 @@ std::string FTPServerConfig::getConfigFormat() const {
 }
 
 bool FTPServerConfig::parseConfigFile(const std::string& config_file) {
+    (void)config_file; // Suppress unused parameter warning
     // For now, just return true as a placeholder
     // TODO: Implement actual config file parsing
     loaded_ = true;
@@ -115,6 +117,7 @@ bool FTPServerConfig::parseConfigFile(const std::string& config_file) {
 }
 
 bool FTPServerConfig::parseJSONConfig(const std::string& config_file) {
+    (void)config_file; // Suppress unused parameter warning
     // For now, just return true as a placeholder
     // TODO: Implement actual JSON parsing
     loaded_ = true;
@@ -124,6 +127,7 @@ bool FTPServerConfig::parseJSONConfig(const std::string& config_file) {
 }
 
 bool FTPServerConfig::parseINIConfig(const std::string& config_file) {
+    (void)config_file; // Suppress unused parameter warning
     // For now, just return true as a placeholder
     // TODO: Implement actual INI parsing
     loaded_ = true;
@@ -330,6 +334,15 @@ bool FTPServerConfig::validateUsers() const {
     // For now, just return true as a placeholder
     // TODO: Implement actual user validation
     return true;
+}
+
+std::string FTPServerConfig::getCurrentTimestamp() const {
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+    
+    std::ostringstream oss;
+    oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
+    return oss.str();
 }
 
 } // namespace ssftpd
