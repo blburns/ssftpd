@@ -26,15 +26,15 @@ bool FTPRateLimiter::initialize() {
     }
     
     try {
-        if (config_ && config_->enable_rate_limiting) {
+        if (config_ && config_->rate_limit.enabled) {
             // Load rate limiting configuration
-            max_connections_per_ip_ = config_->rate_limit.max_connections_per_ip;
+            max_connections_per_ip_ = config_->rate_limit.max_connections_per_minute;
             max_connections_per_minute_ = config_->rate_limit.max_connections_per_minute;
             max_requests_per_minute_ = config_->rate_limit.max_requests_per_minute;
             
             // Convert time windows from seconds to chrono duration
-            connection_window_ = std::chrono::seconds(config_->rate_limit.connection_window);
-            request_window_ = std::chrono::seconds(config_->rate_limit.request_window);
+            connection_window_ = std::chrono::seconds(config_->rate_limit.window_size);
+            request_window_ = std::chrono::seconds(config_->rate_limit.window_size);
         }
         
         initialized_ = true;

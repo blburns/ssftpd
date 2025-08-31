@@ -274,7 +274,7 @@ void FTPConnectionManager::cleanupConnections() {
         }
         
         // Check for inactive connections
-        if (connection->isInactive()) {
+        if (!connection->isActive()) {
             logger_->debug("Cleaning up inactive connection");
             connection->disconnect();
             it = connections_.erase(it);

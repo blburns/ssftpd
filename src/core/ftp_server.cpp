@@ -1,5 +1,11 @@
 #include "ssftpd/ftp_server.hpp"
 #include "ssftpd/logger.hpp"
+#include "ssftpd/ftp_connection_manager.hpp"
+#include "ssftpd/ftp_user_manager.hpp"
+#include "ssftpd/ftp_virtual_host_manager.hpp"
+#include "ssftpd/ftp_statistics.hpp"
+#include "ssftpd/ftp_rate_limiter.hpp"
+#include "ssftpd/ftp_server_config.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -11,13 +17,14 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <cstring>
+#include <algorithm>
 
 namespace ssftpd {
 
 FTPServer::FTPServer(std::shared_ptr<FTPServerConfig> config)
     : config_(config)
     , running_(false)
-    , server_socket_(-1)
+    , listen_socket_(-1)
     , logger_(std::make_shared<Logger>())
     , connection_manager_(std::make_shared<FTPConnectionManager>(config, logger_))
     , user_manager_(std::make_shared<FTPUserManager>(config, logger_))
@@ -98,31 +105,31 @@ bool FTPServer::initialize() {
 
 bool FTPServer::createServerSocket() {
     // Create socket
-    server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket_ == -1) {
+    listen_socket_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_socket_ == -1) {
         logger_->error("Failed to create socket: " + std::string(strerror(errno)));
         return false;
     }
     
     // Set socket options
     int opt = 1;
-    if (setsockopt(server_socket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(listen_socket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         logger_->error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
-        close(server_socket_);
+        close(listen_socket_);
         return false;
     }
     
     // Set non-blocking mode
-    int flags = fcntl(server_socket_, F_GETFL, 0);
+    int flags = fcntl(listen_socket_, F_GETFL, 0);
     if (flags == -1) {
         logger_->error("Failed to get socket flags: " + std::string(strerror(errno)));
-        close(server_socket_);
+        close(listen_socket_);
         return false;
     }
     
-    if (fcntl(server_socket_, F_SETFL, flags | O_NONBLOCK) == -1) {
+    if (fcntl(listen_socket_, F_SETFL, flags | O_NONBLOCK) == -1) {
         logger_->error("Failed to set non-blocking mode: " + std::string(strerror(errno)));
-        close(server_socket_);
+        close(listen_socket_);
         return false;
     }
     
@@ -137,21 +144,21 @@ bool FTPServer::createServerSocket() {
     } else {
         if (inet_pton(AF_INET, config_->connection.bind_address.c_str(), &server_addr.sin_addr) <= 0) {
             logger_->error("Invalid bind address: " + config_->connection.bind_address);
-            close(server_socket_);
+            close(listen_socket_);
             return false;
         }
     }
     
-    if (bind(server_socket_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+    if (bind(listen_socket_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         logger_->error("Failed to bind socket: " + std::string(strerror(errno)));
-        close(server_socket_);
+        close(listen_socket_);
         return false;
     }
     
     // Listen for connections
-    if (listen(server_socket_, config_->connection.max_connections) < 0) {
+    if (listen(listen_socket_, config_->connection.max_connections) < 0) {
         logger_->error("Failed to listen on socket: " + std::string(strerror(errno)));
-        close(server_socket_);
+        close(listen_socket_);
         return false;
     }
     
@@ -162,13 +169,28 @@ bool FTPServer::createServerSocket() {
     return true;
 }
 
+LogLevel FTPServer::parseLogLevel(const std::string& level_str) {
+    std::string lower_level = level_str;
+    std::transform(lower_level.begin(), lower_level.end(), lower_level.begin(), ::tolower);
+    
+    if (lower_level == "trace") return LogLevel::TRACE;
+    if (lower_level == "debug") return LogLevel::DEBUG;
+    if (lower_level == "info") return LogLevel::INFO;
+    if (lower_level == "warn") return LogLevel::WARN;
+    if (lower_level == "error") return LogLevel::ERROR;
+    if (lower_level == "fatal") return LogLevel::FATAL;
+    
+    // Default to INFO if unknown
+    return LogLevel::INFO;
+}
+
 bool FTPServer::start() {
     if (running_) {
         logger_->warn("Server is already running");
         return true;
     }
     
-    if (server_socket_ == -1) {
+    if (listen_socket_ == -1) {
         logger_->error("Server socket not initialized");
         return false;
     }
@@ -232,7 +254,7 @@ void FTPServer::acceptConnections() {
     socklen_t client_addr_len = sizeof(client_addr);
     
     while (running_) {
-        int client_socket = accept(server_socket_, (struct sockaddr*)&client_addr, &client_addr_len);
+        int client_socket = accept(listen_socket_, (struct sockaddr*)&client_addr, &client_addr_len);
         
         if (client_socket == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -261,7 +283,7 @@ void FTPServer::acceptConnections() {
         
         // Create new connection
         auto connection = std::make_shared<FTPConnection>(
-            client_socket, client_addr, config_, logger_, user_manager_, virtual_host_manager_);
+            client_socket, client_ip, default_virtual_host_);
         
         if (connection_manager_->addConnection(connection)) {
             logger_->info("New connection accepted from " + client_ip);
@@ -295,48 +317,15 @@ void FTPServer::stop() {
     stopMonitoring();
     
     // Close server socket
-    if (server_socket_ != -1) {
-        close(server_socket_);
-        server_socket_ = -1;
+    if (listen_socket_ != -1) {
+        close(listen_socket_);
+        listen_socket_ = -1;
     }
     
     logger_->info("FTP server stopped");
 }
 
-bool FTPServer::isRunning() const {
-    return running_;
-}
 
-void FTPServer::reloadConfiguration() {
-    logger_->info("Reloading configuration...");
-    
-    // Stop the server temporarily
-    bool was_running = running_;
-    if (was_running) {
-        stop();
-    }
-    
-    // Reload configuration
-    if (config_->loadFromFile(config_->config_file)) {
-        logger_->info("Configuration reloaded successfully");
-        
-        // Reinitialize components
-        if (initialize()) {
-            if (was_running) {
-                start();
-            }
-        } else {
-            logger_->error("Failed to reinitialize server after configuration reload");
-        }
-    } else {
-        logger_->error("Failed to reload configuration");
-        // Try to restore previous state
-        if (was_running) {
-            initialize();
-            start();
-        }
-    }
-}
 
 void FTPServer::setupSignalHandlers() {
     // Set up signal handlers for graceful shutdown
@@ -357,7 +346,7 @@ void FTPServer::signalHandler(int signal) {
         case SIGHUP:
             // Reload configuration
             if (instance_) {
-                instance_->reloadConfiguration();
+                instance_->loadConfiguration();
             }
             break;
     }
@@ -402,6 +391,8 @@ void FTPServer::monitorSystemResources() {
     }
 }
 
+
+
 void FTPServer::monitorConnections() {
     if (connection_manager_) {
         size_t connection_count = connection_manager_->getConnectionCount();
@@ -415,17 +406,7 @@ void FTPServer::monitorConnections() {
     }
 }
 
-LogLevel FTPServer::parseLogLevel(const std::string& level_str) {
-    if (level_str == "TRACE") return LogLevel::TRACE;
-    if (level_str == "DEBUG") return LogLevel::DEBUG;
-    if (level_str == "INFO") return LogLevel::INFO;
-    if (level_str == "WARN") return LogLevel::WARN;
-    if (level_str == "ERROR") return LogLevel::ERROR;
-    if (level_str == "FATAL") return LogLevel::FATAL;
-    
-    // Default to INFO
-    return LogLevel::INFO;
-}
+
 
 // Static instance pointer for signal handling
 FTPServer* FTPServer::instance_ = nullptr;

@@ -1,4 +1,4 @@
-ommit an push before you chanfge to #include "ssftpd/ftp_connection.hpp"
+#include "ssftpd/ftp_connection.hpp"
 #include "ssftpd/logger.hpp"
 #include <iostream>
 #include <sstream>
@@ -208,29 +208,21 @@ void FTPConnection::handleQUIT(const std::vector<std::string>& args) {
     disconnect();
 }
 
-void FTPConnection::handleSYST() {
+void FTPConnection::handleSYST(const std::vector<std::string>& args) {
+    (void)args; // Suppress unused parameter warning
     sendResponse(215, "UNIX Type: L8");
 }
 
-void FTPConnection::handleFEAT() {
+void FTPConnection::handleFEAT(const std::vector<std::string>& args) {
+    (void)args; // Suppress unused parameter warning
     sendResponse(211, "Features:");
-    sendResponse(0, " UTF8");
-    sendResponse(0, " AUTH TLS");
-    sendResponse(0, " PBSZ");
-    sendResponse(0, " PROT");
-    sendResponse(0, " REST STREAM");
-    sendResponse(0, " SIZE");
-    sendResponse(0, " MDTM");
-    sendResponse(0, " MFMT");
-    sendResponse(0, " MFCT");
-    sendResponse(0, " MFF");
-    sendResponse(0, " MLST type*;size*;sizd*;modify*;UNIX.mode*;UNIX.uid*;UNIX.gid*;unique*;");
-    sendResponse(0, " MLSD");
-    sendResponse(0, " EPSV");
-    sendResponse(0, " EPRT");
-    sendResponse(0, " TVFS");
-    sendResponse(0, " .");
-    sendResponse(211, "End");
+    sendResponse(211, " UTF8");
+    sendResponse(211, " PASV");
+    sendResponse(211, " EPSV");
+    sendResponse(211, " REST STREAM");
+    sendResponse(211, " SIZE");
+    sendResponse(211, " MDTM");
+    sendResponse(211, " End");
 }
 
 void FTPConnection::handlePWD(const std::vector<std::string>& args) {
