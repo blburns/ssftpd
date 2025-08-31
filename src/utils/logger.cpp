@@ -405,6 +405,27 @@ void Logger::setLogBufferSize(size_t buffer_size) {
     log_buffer_size_ = buffer_size;
 }
 
+void Logger::setLogFile(const std::string& log_file) {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    
+    if (log_stream_.is_open()) {
+        log_stream_.close();
+    }
+    
+    log_file_ = log_file;
+    
+    if (log_to_file_ && !log_file_.empty()) {
+        // Create log directory if it doesn't exist
+        auto log_dir = std::filesystem::path(log_file_).parent_path();
+        if (!log_dir.empty() && !std::filesystem::exists(log_dir)) {
+            std::filesystem::create_directories(log_dir);
+        }
+        
+        // Open new log file
+        log_stream_.open(log_file_, std::ios::app);
+    }
+}
+
 void Logger::setAsyncLogging(bool enable) {
     if (enable != async_logging_) {
         async_logging_ = enable;

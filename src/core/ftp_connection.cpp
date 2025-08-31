@@ -284,29 +284,27 @@ void FTPConnection::updateActivityTime() {
         std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
-void FTPConnection::sendResponse(int code, const std::string& message) {
-    std::ostringstream oss;
-    oss << code;
-    if (!message.empty()) {
-        oss << " " << message;
+bool FTPConnection::sendData(const char* data, size_t length) {
+    if (!client_socket_ || !data || length == 0) {
+        return false;
     }
-    oss << "\r\n";
     
-    std::string response = oss.str();
+    ssize_t bytes_sent = send(client_socket_, data, length, 0);
+    if (bytes_sent > 0) {
+        bytes_sent_ += bytes_sent;
+        return true;
+    }
+    
+    return false;
+}
+
+void FTPConnection::sendResponse(int code, const std::string& message) {
+    std::string response = std::to_string(code) + " " + message + "\r\n";
     send(client_socket_, response.c_str(), response.length(), 0);
 }
 
-void FTPConnection::sendData(const std::string& data) {
-    // Simple data sending (in production, implement proper data connection)
-    send(client_socket_, data.c_str(), data.length(), 0);
-}
-
 void FTPConnection::disconnect() {
-    if (!active_.load()) {
-        return;
-    }
-    
-    active_.store(false);
+    active_ = false;
     
     if (client_socket_ != INVALID_SOCKET) {
         close(client_socket_);
@@ -317,8 +315,6 @@ void FTPConnection::disconnect() {
         close(data_socket_);
         data_socket_ = INVALID_SOCKET;
     }
-    
-    logger_->info("FTP connection closed for " + client_addr_);
 }
 
 void FTPConnection::process() {
@@ -339,6 +335,22 @@ void FTPConnection::process() {
 
 void FTPConnection::setStartTime(const std::chrono::steady_clock::time_point& start_time) {
     start_time_ = start_time;
+}
+
+std::string FTPConnection::getUsername() const {
+    return username_;
+}
+
+std::chrono::steady_clock::time_point FTPConnection::getLastActivity() const {
+    return start_time_; // Use start_time_ as the last activity time
+}
+
+uint64_t FTPConnection::getBytesTransferred() const {
+    return bytes_sent_.load() + bytes_received_.load();
+}
+
+uint64_t FTPConnection::getCommandsExecuted() const {
+    return files_sent_.load() + files_received_.load();
 }
 
 } // namespace ssftpd

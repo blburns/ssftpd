@@ -169,6 +169,28 @@ bool FTPServer::createServerSocket() {
     return true;
 }
 
+bool FTPServer::loadConfiguration() {
+    if (!config_) {
+        return false;
+    }
+    
+    // Reload configuration from file
+    if (!config_->loadFromFile(config_->config_file)) {
+        return false;
+    }
+    
+    // Reinitialize components with new configuration
+    if (user_manager_) {
+        user_manager_->initialize();
+    }
+    
+    if (virtual_host_manager_) {
+        virtual_host_manager_->initialize();
+    }
+    
+    return true;
+}
+
 LogLevel FTPServer::parseLogLevel(const std::string& level_str) {
     std::string lower_level = level_str;
     std::transform(lower_level.begin(), lower_level.end(), lower_level.begin(), ::tolower);

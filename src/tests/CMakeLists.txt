@@ -30,8 +30,9 @@ if(GTest_FOUND)
     # Test executable
     add_executable(simple-tftpd-tests ${TEST_SOURCES})
     
-    # Link against the actual source files that contain the classes being tested
+    # Link against the main library
     target_link_libraries(simple-tftpd-tests 
+        ssftpd-lib-x86_64
         ${GTEST_LIBRARIES}
         ${PLATFORM_LIBRARIES}
     )
