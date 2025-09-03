@@ -47,14 +47,40 @@ A secure, configurable, and feature-rich FTP server written in C++ for Linux, ma
 
 ## Quick Start
 
-### Prerequisites
+### 🐳 Docker (Recommended)
+
+The fastest way to get started with ssftpd is using Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/ssftpd/ssftpd.git
+cd ssftpd
+
+# Quick start with Docker
+cd deployment/examples/docker
+docker-compose up -d
+
+# Test the FTP service
+nc -z localhost 21
+```
+
+**Docker Features:**
+- ✅ **Zero dependencies** - No need to install build tools
+- ✅ **Cross-platform** - Works on Linux, macOS, Windows
+- ✅ **Production-ready** - Optimized runtime image
+- ✅ **Development environment** - Full debugging tools included
+- ✅ **Multi-architecture** - x86_64, ARM64, ARMv7 support
+
+For detailed Docker deployment, see [Docker Deployment Guide](docs/deployment/docker.md).
+
+### Traditional Installation
+
+#### Prerequisites
 
 - **C++17 Compiler**: GCC 7+, Clang 5+, or MSVC 2017+
 - **CMake 3.16+**: Build system
 - **OpenSSL**: SSL/TLS support
 - **jsoncpp**: JSON configuration parsing
-
-### Installation
 
 #### From Source
 
@@ -381,9 +407,52 @@ ssftpd/
 ├── tools/                   # Management tools
 ├── docs/                    # Documentation
 ├── scripts/                 # Build and deployment scripts
+├── deployment/              # Deployment configurations
+│   └── examples/
+│       └── docker/          # Docker deployment examples
+├── Dockerfile              # Multi-stage Docker build
+├── docker-compose.yml      # Docker Compose orchestration
+├── .dockerignore           # Docker build context optimization
 ├── CMakeLists.txt          # CMake build configuration
 └── Makefile                # Make build system
 ```
+
+## 🐳 Docker Infrastructure
+
+ssftpd includes comprehensive Docker support for development, testing, and production deployment:
+
+### Docker Features
+
+- **Multi-stage builds** for different Linux distributions (Ubuntu, CentOS, Alpine)
+- **Multi-architecture support** (x86_64, ARM64, ARMv7)
+- **Development environment** with debugging tools and live code mounting
+- **Production-ready runtime** with minimal footprint and security hardening
+- **Health checks** and monitoring capabilities
+- **Volume mounts** for configuration, logs, and FTP data
+
+### Quick Docker Commands
+
+```bash
+# Development environment
+docker-compose --profile dev up -d
+
+# Production deployment
+docker-compose --profile runtime up -d
+
+# Build for all platforms
+./scripts/build-docker.sh -d all
+
+# Deploy with custom configuration
+./scripts/deploy-docker.sh -p runtime -c ./config -l ./logs -d ./data
+```
+
+### Docker Ports
+
+- **21/tcp** - FTP control port
+- **990/tcp** - FTPS control port (SSL/TLS)
+- **1024-65535/tcp** - Passive mode data ports
+
+For complete Docker documentation, see [Docker Deployment Guide](docs/deployment/docker.md).
 
 ### Contributing
 
