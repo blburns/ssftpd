@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  ssftpd:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: ssftpd
+    restart: unless-stopped
+    ports:
+      - "21:21/tcp"
+      - "990:990/tcp"
+      - "1024-65535:1024-65535/tcp"
+    volumes:
+      - ./config:/etc/ssftpd:ro
+      - ./logs:/var/log/ssftpd
+      - ./data:/var/ftp
+    environment:
+      - FTP_ROOT_DIR=/var/ftp
+      - FTP_CONFIG_FILE=/etc/ssftpd/ssftpd.conf
+      - LOG_LEVEL=INFO
+    networks:
+      - ftp-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "21"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  ftp-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
