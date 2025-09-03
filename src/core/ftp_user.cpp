@@ -46,7 +46,7 @@ bool FTPUser::verifyPassword(const std::string& password) const {
     if (password_hash_.empty()) {
         return false;
     }
-    
+
     std::string hashed_input = hashPassword(password);
     return password_hash_ == hashed_input;
 }
@@ -54,11 +54,11 @@ bool FTPUser::verifyPassword(const std::string& password) const {
 void FTPUser::updateLastLogin() {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
-    
+
     std::ostringstream oss;
     oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
     last_login_time_ = oss.str();
-    
+
     total_connections_++;
 }
 
@@ -66,15 +66,15 @@ bool FTPUser::isExpired() const {
     if (expiration_date_.empty()) {
         return false;
     }
-    
+
     // Simple expiration check - in production, implement proper date parsing
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
-    
+
     std::ostringstream oss;
     oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d");
     std::string current_date = oss.str();
-    
+
     return current_date > expiration_date_;
 }
 
@@ -92,13 +92,13 @@ bool FTPUser::isPathAllowed(const std::string& path) const {
     if (allowed_paths_.empty()) {
         return true; // No restrictions
     }
-    
+
     for (const auto& allowed_path : allowed_paths_) {
         if (path.find(allowed_path) == 0) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -108,7 +108,7 @@ bool FTPUser::isPathDenied(const std::string& path) const {
             return true;
         }
     }
-    
+
     return false;
 }
 

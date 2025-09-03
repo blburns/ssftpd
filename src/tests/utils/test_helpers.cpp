@@ -26,29 +26,29 @@ std::string TestHelpers::createTempDirectory() {
     std::string temp_dir = "/tmp/simple-tftpd-test-";
     temp_dir += std::to_string(getpid());
     temp_dir += "-";
-    
+
     // Add random suffix
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(1000, 9999);
     temp_dir += std::to_string(dis(gen));
-    
+
     // Create directory
     if (mkdir(temp_dir.c_str(), 0755) != 0) {
         throw std::runtime_error("Failed to create temp directory: " + temp_dir);
     }
-    
+
     return temp_dir;
 }
 
 std::string TestHelpers::createTestFile(const std::string& filename, const std::string& content) {
     std::string filepath = test_dir_ + "/" + filename;
     std::ofstream file(filepath);
-    
+
     if (!file.is_open()) {
         throw std::runtime_error("Failed to create test file: " + filepath);
     }
-    
+
     file << content;
     file.close();
     return filepath;
@@ -57,20 +57,20 @@ std::string TestHelpers::createTestFile(const std::string& filename, const std::
 std::string TestHelpers::createTestFile(const std::string& filename, size_t size) {
     std::string filepath = test_dir_ + "/" + filename;
     std::ofstream file(filepath, std::ios::binary);
-    
+
     if (!file.is_open()) {
         throw std::runtime_error("Failed to create test file: " + filepath);
     }
-    
+
     // Generate random data
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
-    
+
     for (size_t i = 0; i < size; ++i) {
         file.put(static_cast<char>(dis(gen)));
     }
-    
+
     file.close();
     return filepath;
 }
@@ -85,7 +85,7 @@ std::string TestHelpers::readFile(const std::string& filepath) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
-    
+
     std::string content((std::istreambuf_iterator<char>(file)),
                         std::istreambuf_iterator<char>());
     return content;
@@ -96,7 +96,7 @@ size_t TestHelpers::getFileSize(const std::string& filepath) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
-    
+
     return file.tellg();
 }
 
@@ -117,7 +117,7 @@ std::string TestHelpers::generateRandomString(size_t length) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, chars.length() - 1);
-    
+
     std::string result;
     result.reserve(length);
     for (size_t i = 0; i < length; ++i) {
@@ -131,7 +131,7 @@ std::vector<uint8_t> TestHelpers::generateRandomData(size_t size) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
-    
+
     for (size_t i = 0; i < size; ++i) {
         data[i] = static_cast<uint8_t>(dis(gen));
     }
@@ -141,7 +141,7 @@ std::vector<uint8_t> TestHelpers::generateRandomData(size_t size) {
 bool TestHelpers::compareFiles(const std::string& file1, const std::string& file2) {
     std::ifstream f1(file1, std::ios::binary);
     std::ifstream f2(file2, std::ios::binary);
-    
+
     if (!f1.is_open() || !f2.is_open()) {
         return false;
     }
@@ -157,19 +157,19 @@ bool TestHelpers::isPortAvailable(uint16_t port) {
     if (sock < 0) {
         return false;
     }
-    
+
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
-    
+
     int opt = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    
+
     bool available = (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0);
     close(sock);
-    
+
     return available;
 }
 

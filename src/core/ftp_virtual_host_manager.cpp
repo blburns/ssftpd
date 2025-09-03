@@ -39,7 +39,7 @@ bool FTPVirtualHostManager::initialize() {
         }
 
         initialized_ = true;
-        logger_->info("Virtual host manager initialized with " + 
+        logger_->info("Virtual host manager initialized with " +
                      std::to_string(virtual_hosts_.size()) + " virtual hosts");
         return true;
 
@@ -110,7 +110,7 @@ bool FTPVirtualHostManager::addVirtualHost(std::shared_ptr<FTPVirtualHost> virtu
     return true;
 }
 
-bool FTPVirtualHostManager::updateVirtualHost(const std::string& hostname, 
+bool FTPVirtualHostManager::updateVirtualHost(const std::string& hostname,
                                              std::shared_ptr<FTPVirtualHost> updated_vhost) {
     if (!updated_vhost) {
         logger_->error("Cannot update with null virtual host");
@@ -125,7 +125,7 @@ bool FTPVirtualHostManager::updateVirtualHost(const std::string& hostname,
             new_vhost->setDocumentRoot(updated_vhost->getDocumentRoot());
             new_vhost->setWelcomeMessage(updated_vhost->getWelcomeMessage());
             new_vhost->setBannerMessage(updated_vhost->getBannerMessage());
-            
+
             // Replace the old one
             vhost = new_vhost;
             logger_->info("Virtual host updated: " + hostname);
@@ -155,17 +155,17 @@ bool FTPVirtualHostManager::removeVirtualHost(const std::string& hostname) {
 std::vector<std::string> FTPVirtualHostManager::getVirtualHostNames() const {
     std::vector<std::string> names;
     names.reserve(virtual_hosts_.size());
-    
+
     for (const auto& vhost : virtual_hosts_) {
         names.push_back(vhost->getHostname());
     }
-    
+
     return names;
 }
 
 bool FTPVirtualHostManager::validateVirtualHosts() {
     std::vector<std::string> invalid_hosts;
-    
+
     for (const auto& vhost : virtual_hosts_) {
         // Check hostname
         if (vhost->getHostname().empty()) {
@@ -181,14 +181,14 @@ bool FTPVirtualHostManager::validateVirtualHosts() {
 
         // Check if document root exists
         if (!std::filesystem::exists(vhost->getDocumentRoot())) {
-            invalid_hosts.push_back(vhost->getHostname() + " (document root does not exist: " + 
+            invalid_hosts.push_back(vhost->getHostname() + " (document root does not exist: " +
                                    vhost->getDocumentRoot() + ")");
             continue;
         }
 
         // Check if document root is a directory
         if (!std::filesystem::is_directory(vhost->getDocumentRoot())) {
-            invalid_hosts.push_back(vhost->getHostname() + " (document root is not a directory: " + 
+            invalid_hosts.push_back(vhost->getHostname() + " (document root is not a directory: " +
                                    vhost->getDocumentRoot() + ")");
             continue;
         }
@@ -217,7 +217,7 @@ void FTPVirtualHostManager::loadVirtualHosts() {
             virtual_host->setDocumentRoot(vhost_config.document_root);
             virtual_host->setWelcomeMessage(vhost_config.welcome_message);
             virtual_host->setBannerMessage(vhost_config.banner_message);
-            
+
             virtual_hosts_.push_back(virtual_host);
         }
     }

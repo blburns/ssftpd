@@ -24,9 +24,9 @@ void signalHandler(int signal) {
         // Already shutting down, force exit
         std::exit(1);
     }
-    
+
     g_logger->info("Received signal " + std::to_string(signal) + ", initiating graceful shutdown");
-    
+
     if (g_server) {
         g_server->stop();
     }
@@ -46,7 +46,7 @@ void printUsage() {
     std::cout << "  --foreground, -f     Run in foreground" << std::endl;
     std::cout << "  --test-config        Test configuration file" << std::endl;
     std::cout << "  --validate           Validate configuration" << std::endl;
-    
+
     std::cout << "\nCommands:" << std::endl;
     std::cout << "  start                Start the FTP server" << std::endl;
     std::cout << "  stop                 Stop the FTP server" << std::endl;
@@ -57,14 +57,14 @@ void printUsage() {
     std::cout << "  user                 Manage users" << std::endl;
     std::cout << "  virtual              Manage virtual hosts" << std::endl;
     std::cout << "  ssl                  Manage SSL certificates" << std::endl;
-    
+
     std::cout << "\nUser Subcommands:" << std::endl;
     std::cout << "  add                  Add new user" << std::endl;
     std::cout << "  remove               Remove user" << std::endl;
     std::cout << "  modify               Modify user" << std::endl;
     std::cout << "  list                 List users" << std::endl;
     std::cout << "  password             Change user password" << std::endl;
-    
+
     std::cout << "\nVirtual Host Subcommands:" << std::endl;
     std::cout << "  add                  Add new virtual host" << std::endl;
     std::cout << "  remove               Remove virtual host" << std::endl;
@@ -72,13 +72,13 @@ void printUsage() {
     std::cout << "  list                 List virtual hosts" << std::endl;
     std::cout << "  enable               Enable virtual host" << std::endl;
     std::cout << "  disable              Disable virtual host" << std::endl;
-    
+
     std::cout << "\nSSL Subcommands:" << std::endl;
     std::cout << "  generate             Generate self-signed certificate" << std::endl;
     std::cout << "  install              Install certificate" << std::endl;
     std::cout << "  renew                Renew certificate" << std::endl;
     std::cout << "  status               Show SSL status" << std::endl;
-    
+
     std::cout << "\nExamples:" << std::endl;
     std::cout << "  ssftpd start --config /etc/ssftpd/config.json" << std::endl;
     std::cout << "  ssftpd user add --username john --password secret --home /home/john" << std::endl;
@@ -108,7 +108,7 @@ void printVersion() {
  * @param verbose Output verbose flag
  * @return true if parsed successfully, false otherwise
  */
-bool parseArguments(int argc, char* argv[], 
+bool parseArguments(int argc, char* argv[],
                    std::string& config_file,
                    std::string& command,
                    std::vector<std::string>& args,
@@ -121,10 +121,10 @@ bool parseArguments(int argc, char* argv[],
     daemon_mode = false;
     foreground_mode = false;
     verbose = false;
-    
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        
+
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return false;
@@ -160,7 +160,7 @@ bool parseArguments(int argc, char* argv[],
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -171,7 +171,7 @@ void setupSignalHandlers() {
     signal(SIGINT, signalHandler);   // Ctrl+C
     signal(SIGTERM, signalHandler);  // Termination request
     signal(SIGHUP, signalHandler);   // Hangup (reload config)
-    
+
     #ifndef _WIN32
     signal(SIGUSR1, signalHandler);  // User defined signal 1
     signal(SIGUSR2, signalHandler);  // User defined signal 2
@@ -192,33 +192,33 @@ bool daemonize() {
     if (pid < 0) {
         return false;
     }
-    
+
     if (pid > 0) {
         // Parent process, exit
         exit(0);
     }
-    
+
     // Child process continues
     // Create new session
     if (setsid() < 0) {
         return false;
     }
-    
+
     // Change working directory
     if (chdir("/") < 0) {
         return false;
     }
-    
+
     // Close standard file descriptors
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-    
+
     // Redirect to /dev/null
     open("/dev/null", O_RDONLY);
     open("/dev/null", O_WRONLY);
     open("/dev/null", O_WRONLY);
-    
+
     return true;
     #endif
 }
@@ -230,12 +230,12 @@ bool daemonize() {
  */
 bool testConfiguration(const std::string& config_file) {
     auto config = std::make_shared<FTPServerConfig>();
-    
+
     if (!config->loadFromFile(config_file)) {
         std::cerr << "Error: Failed to load configuration file: " << config_file << std::endl;
         return false;
     }
-    
+
     if (!config->validate()) {
         std::cerr << "Error: Configuration validation failed:" << std::endl;
         for (const auto& error : config->getErrors()) {
@@ -243,7 +243,7 @@ bool testConfiguration(const std::string& config_file) {
         }
         return false;
     }
-    
+
     std::cout << "Configuration file is valid: " << config_file << std::endl;
     return true;
 }
@@ -255,30 +255,30 @@ bool testConfiguration(const std::string& config_file) {
  */
 bool validateConfiguration(const std::string& config_file) {
     auto config = std::make_shared<FTPServerConfig>();
-    
+
     if (!config->loadFromFile(config_file)) {
         std::cerr << "Error: Failed to load configuration file: " << config_file << std::endl;
         return false;
     }
-    
+
     std::cout << "Configuration validation results:" << std::endl;
     std::cout << "  File: " << config_file << std::endl;
     std::cout << "  Loaded: " << (config->getErrors().empty() ? "Yes" : "No") << std::endl;
-    
+
     if (!config->getErrors().empty()) {
         std::cout << "  Errors:" << std::endl;
         for (const auto& error : config->getErrors()) {
             std::cout << "    " << error << std::endl;
         }
     }
-    
+
     if (!config->getWarnings().empty()) {
         std::cout << "  Warnings:" << std::endl;
         for (const auto& warning : config->getWarnings()) {
             std::cout << "    " << warning << std::endl;
         }
     }
-    
+
     return config->getErrors().empty();
 }
 
@@ -290,7 +290,7 @@ bool validateConfiguration(const std::string& config_file) {
  */
 bool startServer(const std::string& config_file, bool daemon_mode) {
     (void)daemon_mode; // Suppress unused parameter warning
-    
+
     try {
         // Load configuration
         auto config = std::make_shared<FTPServerConfig>();
@@ -298,7 +298,7 @@ bool startServer(const std::string& config_file, bool daemon_mode) {
             std::cerr << "Failed to load configuration from " << config_file << std::endl;
             return false;
         }
-    
+
         if (!config->validate()) {
             std::cerr << "Error: Configuration validation failed:" << std::endl;
             for (const auto& error : config->getErrors()) {
@@ -306,7 +306,7 @@ bool startServer(const std::string& config_file, bool daemon_mode) {
             }
             return false;
         }
-    
+
         // Initialize logger
         g_logger = std::make_shared<Logger>(
             config->logging.log_file,
@@ -319,26 +319,26 @@ bool startServer(const std::string& config_file, bool daemon_mode) {
             config->logging.log_to_console,
             config->logging.log_to_file
         );
-    
+
         g_logger->info("Starting Simple FTP Daemon v0.1.0");
         g_logger->info("Configuration file: " + config_file);
-    
+
         // Create and start server
         g_server = std::make_shared<FTPServer>(config);
-    
+
         if (!g_server->start()) {
             g_logger->error("Failed to start FTP server");
             return false;
         }
-    
+
         g_logger->info("FTP server started successfully");
         g_logger->info("Listening on " + config->connection.bind_address + ":" + std::to_string(config->connection.bind_port));
-    
+
         // Main server loop
         while (!g_shutdown_requested && g_server->isRunning()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-    
+
         g_logger->info("FTP server shutdown complete");
         return true;
     } catch (const std::exception& e) {
@@ -361,11 +361,11 @@ int main(int argc, char* argv[]) {
     bool daemon_mode = false;
     bool foreground_mode = false;
     bool verbose = false;
-    
+
     if (!parseArguments(argc, argv, config_file, command, args, daemon_mode, foreground_mode, verbose)) {
         return 1;
     }
-    
+
     // Set default configuration file if none specified
     if (config_file.empty()) {
         #ifdef _WIN32
@@ -374,19 +374,19 @@ int main(int argc, char* argv[]) {
         config_file = "/etc/ssftpd/ssftpd.conf";
         #endif
     }
-    
+
     // Handle special commands
     if (command == "test-config") {
         return testConfiguration(config_file) ? 0 : 1;
     }
-    
+
     if (command == "validate") {
         return validateConfiguration(config_file) ? 0 : 1;
     }
-    
+
     // Setup signal handlers
     setupSignalHandlers();
-    
+
     // Handle daemon mode
     if (daemon_mode && !foreground_mode) {
         if (!daemonize()) {
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-    
+
     // Start server if no specific command
     if (command.empty() || command == "start") {
         if (!startServer(config_file, daemon_mode)) {
@@ -405,6 +405,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Command '" << command << "' not yet implemented" << std::endl;
         return 1;
     }
-    
+
     return 0;
 }

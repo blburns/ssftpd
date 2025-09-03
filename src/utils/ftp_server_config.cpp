@@ -17,14 +17,14 @@ bool FTPServerConfig::loadFromFile(const std::string& config_file) {
     if (config_file.empty()) {
         return false;
     }
-    
+
     if (!std::filesystem::exists(config_file)) {
         return false;
     }
-    
+
     // Determine file format
     std::string extension = std::filesystem::path(config_file).extension().string();
-    
+
     if (extension == ".json") {
         return parseJSONConfig(config_file);
     } else if (extension == ".ini" || extension == ".conf") {
@@ -46,43 +46,43 @@ bool FTPServerConfig::validate() const {
     // Clear previous errors and warnings (using const_cast since we need to modify)
     const_cast<FTPServerConfig*>(this)->errors_.clear();
     const_cast<FTPServerConfig*>(this)->warnings_.clear();
-    
+
     // Validate SSL configuration
     if (!validateSSL()) {
         // SSL validation errors are already added to errors_ vector
     }
-    
+
     // Validate security configuration
     if (!validateSecurity()) {
         // Security validation errors are already added to errors_ vector
     }
-    
+
     // Validate connection configuration
     if (!validateConnection()) {
         // Connection validation errors are already added to errors_ vector
     }
-    
+
     // Validate virtual host configuration
     if (!validateVirtualHosts()) {
         // Virtual host validation errors are already added to errors_ vector
     }
-    
+
     // Validate user configuration
     if (!validateUsers()) {
         // User validation errors are already added to errors_ vector
     }
-    
+
     // Add warnings for potential issues
     const_cast<FTPServerConfig*>(this)->warnings_.push_back("Binding to 0.0.0.0 allows connections from any IP address");
-    
+
     if (security.allow_anonymous) {
         const_cast<FTPServerConfig*>(this)->warnings_.push_back("Anonymous access is enabled - consider security implications");
     }
-    
+
     if (connection.max_connections > 1000) {
         const_cast<FTPServerConfig*>(this)->warnings_.push_back("High connection limit may impact performance");
     }
-    
+
     return errors_.empty();
 }
 
@@ -147,7 +147,7 @@ void FTPServerConfig::setDefaults() {
     ssl.verify_peer = false;
     ssl.min_tls_version = 0x0301; // TLS 1.0
     ssl.max_tls_version = 0x0304; // TLS 1.3
-    
+
     // Logging defaults
     logging.log_file = "/var/log/ssftpd/ssftpd.log";
     logging.log_level = "INFO";
@@ -159,7 +159,7 @@ void FTPServerConfig::setDefaults() {
     logging.log_format = "default";
     logging.max_log_size = 10 * 1024 * 1024; // 10MB
     logging.max_log_files = 5;
-    
+
     // Security defaults
     security.chroot_enabled = false;
     security.chroot_directory = "";
@@ -172,7 +172,7 @@ void FTPServerConfig::setDefaults() {
     security.max_login_attempts = 3;
     security.login_timeout = std::chrono::seconds(30);
     security.session_timeout = std::chrono::seconds(3600);
-    
+
     // Transfer defaults
     transfer.max_file_size = 0; // 0 = unlimited
     transfer.max_transfer_rate = 0; // 0 = unlimited
@@ -182,7 +182,7 @@ void FTPServerConfig::setDefaults() {
     transfer.buffer_size = 8192;
     transfer.use_sendfile = true;
     transfer.use_mmap = false;
-    
+
     // Connection defaults
     connection.bind_address = "0.0.0.0";
     connection.bind_port = 21;
@@ -197,14 +197,14 @@ void FTPServerConfig::setDefaults() {
     connection.tcp_nodelay = true;
     connection.reuse_address = true;
     connection.backlog = 50;
-    
+
     // Passive mode defaults
     passive.enabled = true;
     passive.min_port = 1024;
     passive.max_port = 65535;
     passive.use_external_ip = false;
     passive.external_ip = "";
-    
+
     // Rate limiting defaults
     rate_limit.enabled = false;
     rate_limit.max_connections_per_minute = 60;
@@ -212,7 +212,7 @@ void FTPServerConfig::setDefaults() {
     rate_limit.max_transfer_rate = 1024 * 1024; // 1MB/s
     rate_limit.window_size = std::chrono::seconds(60);
     rate_limit.block_duration = std::chrono::seconds(300);
-    
+
     // Virtual host defaults
     enable_virtual_hosts = false;
     enable_user_management = true;
@@ -220,26 +220,26 @@ void FTPServerConfig::setDefaults() {
     enable_logging = true;
     enable_statistics = true;
     enable_monitoring = false;
-    
+
     // Performance defaults
     thread_pool_size = 4;
     max_memory_usage = 100 * 1024 * 1024; // 100MB
     enable_compression = false;
     enable_caching = true;
     cache_size = 10 * 1024 * 1024; // 10MB
-    
+
     // Monitoring defaults
     enable_metrics = false;
     metrics_endpoint = "/metrics";
     metrics_port = 8080;
     metrics_interval = std::chrono::seconds(60);
-    
+
     // Backup defaults
     enable_backup = false;
     backup_directory = "";
     backup_interval = std::chrono::seconds(86400); // 24 hours
     max_backups = 7;
-    
+
     // Development defaults
     debug_mode = false;
     verbose_logging = false;
@@ -252,27 +252,27 @@ bool FTPServerConfig::validateSSL() const {
     if (!ssl.enabled) {
         return true;
     }
-    
+
     if (ssl.certificate_file.empty()) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("SSL enabled but no certificate file specified");
         return false;
     }
-    
+
     if (ssl.private_key_file.empty()) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("SSL enabled but no private key file specified");
         return false;
     }
-    
+
     if (!std::filesystem::exists(ssl.certificate_file)) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("SSL certificate file does not exist: " + ssl.certificate_file);
         return false;
     }
-    
+
     if (!std::filesystem::exists(ssl.private_key_file)) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("SSL private key file does not exist: " + ssl.private_key_file);
         return false;
     }
-    
+
     return true;
 }
 
@@ -281,12 +281,12 @@ bool FTPServerConfig::validateSecurity() const {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("Chroot enabled but no directory specified");
         return false;
     }
-    
+
     if (security.chroot_enabled && !std::filesystem::exists(security.chroot_directory)) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("Chroot directory does not exist: " + security.chroot_directory);
         return false;
     }
-    
+
     return true;
 }
 
@@ -295,17 +295,17 @@ bool FTPServerConfig::validateConnection() const {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("Invalid bind port: 0");
         return false;
     }
-    
+
     if (connection.bind_port > 65535) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("Invalid bind port: " + std::to_string(connection.bind_port));
         return false;
     }
-    
+
     if (connection.max_connections == 0) {
         const_cast<FTPServerConfig*>(this)->errors_.push_back("Invalid max connections: 0");
         return false;
     }
-    
+
     return true;
 }
 
@@ -315,18 +315,18 @@ bool FTPServerConfig::validateVirtualHosts() const {
             const_cast<FTPServerConfig*>(this)->errors_.push_back("Virtual host with empty hostname");
             continue;
         }
-        
+
         if (vhost.document_root.empty()) {
             const_cast<FTPServerConfig*>(this)->errors_.push_back("Virtual host " + vhost.hostname + " has no document root");
             continue;
         }
-        
+
         if (!std::filesystem::exists(vhost.document_root)) {
             const_cast<FTPServerConfig*>(this)->errors_.push_back("Virtual host " + vhost.hostname + " document root does not exist: " + vhost.document_root);
             continue;
         }
     }
-    
+
     return true;
 }
 
@@ -339,7 +339,7 @@ bool FTPServerConfig::validateUsers() const {
 std::string FTPServerConfig::getCurrentTimestamp() const {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
-    
+
     std::ostringstream oss;
     oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
     return oss.str();

@@ -11,14 +11,14 @@ TEST(BasicTest, TestFramework) {
 // Test Logger class
 TEST(LoggerTest, BasicFunctionality) {
     ssftpd::Logger logger;
-    
+
     // Test default log level
     EXPECT_EQ(logger.getLogLevel(), ssftpd::LogLevel::INFO);
-    
+
     // Test setting log level
     logger.setLogLevel(ssftpd::LogLevel::DEBUG);
     EXPECT_EQ(logger.getLogLevel(), ssftpd::LogLevel::DEBUG);
-    
+
     // Test console logging (can only set, not check state)
     logger.setConsoleOutput(true);
     // Note: No getter method available for console output state
