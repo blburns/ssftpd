@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - .:/app
+      - build-cache:/app/build
+    ports:
+      - "21:21/tcp"
+      - "990:990/tcp"
+      - "1024-65535:1024-65535/tcp"
+    environment:
+      - PLATFORM=linux
+      - DISTRO=ubuntu
+    command: /bin/bash
+    profiles:
+      - dev
+
+  # Runtime container
+  ssftpd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    ports:
+      - "21:21/tcp"
+      - "990:990/tcp"
+      - "1024-65535:1024-65535/tcp"
+    volumes:
+      - ./config:/etc/ssftpd:ro
+      - ./logs:/var/log/ssftpd
+      - ./data:/var/ftp
+    environment:
+      - FTP_ROOT_DIR=/var/ftp
+      - FTP_CONFIG_FILE=/etc/ssftpd/ssftpd.conf
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "21"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - runtime
+
+  # Build environments for different distributions
+  build-ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ubuntu-builder
+    volumes:
+      - ./dist:/app/dist
+      - build-cache:/app/build
+    environment:
+      - PLATFORM=linux
+      - DISTRO=ubuntu
+    profiles:
+      - build
+
+  build-centos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: centos-builder
+    volumes:
+      - ./dist:/app/dist
+      - build-cache:/app/build
+    environment:
+      - PLATFORM=linux
+      - DISTRO=centos
+    profiles:
+      - build
+
+  build-alpine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: alpine-builder
+    volumes:
+      - ./dist:/app/dist
+      - build-cache:/app/build
+    environment:
+      - PLATFORM=linux
+      - DISTRO=alpine
+    profiles:
+      - build
+
+  # Multi-architecture build
+  build-multiarch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: multiarch-builder
+      platforms:
+        - linux/amd64
+        - linux/arm64
+        - linux/arm/v7
+    volumes:
+      - ./dist:/app/dist
+      - build-cache:/app/build
+    environment:
+      - PLATFORM=linux
+      - DISTRO=multiarch
+    profiles:
+      - build
+
+volumes:
+  build-cache:
+    driver: local
